@@ -1,4 +1,5 @@
 
+import java.util.*
 import javax.swing.JFrame
 
 class Launcher {
@@ -71,7 +72,7 @@ class CenterPitScene():Scene(
         )
     },
     {DeathScene()}
-) {
+){
     init {
         if(Hero.wand){
             button2Text = "use ur wand"
@@ -140,7 +141,9 @@ class HitEnemyScene(enemy: Enemy,responseScene:()->Scene,winScene: Scene,weapon:
 ){
     init {
         val newEnemyHealth = enemy.health - weapon.damage
-        if(Hero.ailment is CombatEffect.Stun){
+        val rand = Random().nextInt(100)
+        val ail = Hero.ailment
+        if(ail is CombatEffect.Stun && ail.chance>rand){
             mainText = "${Hero.name} is stunned and missed their turn!"
             button1Text = "damn"
             nextScene1 = responseScene
@@ -161,10 +164,12 @@ class HitEnemyScene(enemy: Enemy,responseScene:()->Scene,winScene: Scene,weapon:
 
 class GetHitScene(enemy: Enemy,responseScene: Scene):Scene(
         numberOfButtons = 1
-    ){
+){
     init {
         val newhealth = Hero.health - enemy.rightHand.damage
-        if(enemy.ailment is CombatEffect.Stun){
+        val rand = Random().nextInt(100)
+        val ail = enemy.ailment
+        if(ail is CombatEffect.Stun && ail.chance>rand){
             mainText = "the ${enemy.name} is stunned and missed their turn!"
             button1Text = "cool"
             nextScene1 = {
