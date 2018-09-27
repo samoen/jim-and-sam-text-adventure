@@ -25,9 +25,9 @@ sealed class CombatEffect(){
 class Weapon(var wepname: String,var damage: Int,var speed:Int,var wepType:CombatEffect):Item(wepname){}
 
 open class Fightable(
-        var name:String="larry",
-        var rightHand: Weapon = Weapon("starter knife",4,3,CombatEffect.None()),
-        var health:Int=10
+        var name:String,
+        var mainWeapon: Weapon,
+        var health:Int
 ){
     var ailment:CombatEffect = CombatEffect.None()
     fun HealthStatus() = "${this.name} has ${this.health} health"
@@ -35,12 +35,14 @@ open class Fightable(
 
 object UserInterface{ val gameForm = GameForm() }
 
-object Hero:Fightable(){
+object Hero:Fightable(
+        name = "Our hero",
+        mainWeapon =  Weapon("starter knife",4,3,CombatEffect.None()),
+        health = 10
+){
     var wand = false
     var leftHand:Weapon = Weapon("starter buckler",1,9,CombatEffect.Stun(50))
 }
-
-class Enemy(name: String, weapon: Weapon, health: Int):Fightable(name, weapon, health)
 
 class WelcomeScene():Scene(
     "Welcome son",
@@ -66,7 +68,7 @@ class CenterPitScene():Scene(
     "avoid danger",
     {
         FightScene(
-                Enemy("kobold",Weapon("kobold dagger",3,5,CombatEffect.None()), 8),
+                Fightable("kobold",Weapon("kobold dagger",3,5,CombatEffect.None()), 8),
                 false,
                 SidePitScene()
         )
@@ -108,22 +110,22 @@ class FindWandScene():Scene(
 }
 
 
-class FightScene(enemy: Enemy,ongoing:Boolean,winScene:Scene): Scene(
+class FightScene(enemy: Fightable,ongoing:Boolean,winScene:Scene): Scene(
     "A ${enemy.name} appears! ${enemy.HealthStatus()}. ${Hero.HealthStatus()}",
     "use your ${Hero.leftHand.name}",
-    "use your ${Hero.rightHand.name}",
+    "use your ${Hero.mainWeapon.name}",
      {
-         if(Hero.leftHand.speed>enemy.rightHand.speed){
-             HitEnemyScene(enemy,{GetHitScene(enemy,FightScene(enemy,true,winScene))},winScene,Hero.leftHand)
+         if(Hero.leftHand.speed>enemy.mainWeapon.speed){
+             HitEnemyScene(enemy,{GetHitScene(enemy,{FightScene(enemy,true,winScene)})},winScene,Hero.leftHand)
          }else{
-             GetHitScene(enemy,HitEnemyScene(enemy,{FightScene(enemy,true,winScene)},winScene,Hero.leftHand) )
+             GetHitScene(enemy,{HitEnemyScene(enemy,{FightScene(enemy,true,winScene)},winScene,Hero.leftHand)} )
          }
      },
      {
-         if(Hero.rightHand.speed>enemy.rightHand.speed){
-             HitEnemyScene(enemy,{GetHitScene(enemy,FightScene(enemy,true,winScene))},winScene,Hero.rightHand)
+         if(Hero.mainWeapon.speed>enemy.mainWeapon.speed){
+             HitEnemyScene(enemy,{GetHitScene(enemy,{FightScene(enemy,true,winScene)})},winScene,Hero.mainWeapon)
          }else{
-             GetHitScene(enemy, HitEnemyScene(enemy, { FightScene(enemy, true, winScene) }, winScene, Hero.rightHand))
+             GetHitScene(enemy, {HitEnemyScene(enemy, { FightScene(enemy, true, winScene) }, winScene, Hero.mainWeapon)})
          }
      }
 ){
@@ -136,7 +138,7 @@ class FightScene(enemy: Enemy,ongoing:Boolean,winScene:Scene): Scene(
 
 }
 
-class HitEnemyScene(enemy: Enemy,responseScene:()->Scene,winScene: Scene,weapon: Weapon): Scene(
+class HitEnemyScene(enemy: Fightable,responseScene:()->Scene,winScene: Scene,weapon: Weapon): Scene(
         numberOfButtons = 1
 ){
     init {
@@ -162,19 +164,18 @@ class HitEnemyScene(enemy: Enemy,responseScene:()->Scene,winScene: Scene,weapon:
     }
 }
 
-class GetHitScene(enemy: Enemy,responseScene: Scene):Scene(
+class GetHitScene(enemy: Fightable,responseScene: ()->Scene):Scene(
         numberOfButtons = 1
 ){
     init {
-        val newhealth = Hero.health - enemy.rightHand.damage
+        val newhealth = Hero.health - enemy.mainWeapon.damage
         val rand = Random().nextInt(100)
         val ail = enemy.ailment
         if(ail is CombatEffect.Stun && ail.chance>rand){
             mainText = "the ${enemy.name} is stunned and missed their turn!"
             button1Text = "cool"
-            nextScene1 = {
-                responseScene
-            }
+            nextScene1 = responseScene
+
             enemy.ailment = CombatEffect.None()
         }else if(newhealth<1){
             mainText = "you succumb to your wounds and die son"
@@ -182,9 +183,9 @@ class GetHitScene(enemy: Enemy,responseScene: Scene):Scene(
             button1Text = "awww :("
         }else{
             Hero.health = newhealth
-            Hero.ailment = enemy.rightHand.wepType
+            Hero.ailment = enemy.mainWeapon.wepType
             mainText = "The ${enemy.name} hits you, your health is now ${Hero.health}"
-            nextScene1 = { responseScene }
+            nextScene1 = responseScene
             button1Text = "I can handle it"
         }
     }
