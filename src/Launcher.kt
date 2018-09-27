@@ -62,7 +62,7 @@ class ScaredScene():Scene(
 )
 
 class CenterPitScene():Scene(
-     mainText = "you in pit" ,
+    mainText = "you in pit" ,
     button1Text = "fight like man",
     button2Text = "avoid danger",
     nextScene1 = {
@@ -124,12 +124,11 @@ class FightScene(enemy: Fightable,ongoing:Boolean,winScene:Scene): Scene(
              GetHitScene(enemy, HitEnemyScene(enemy,  FightScene(enemy, true, winScene) , winScene, Hero.mainWeapon))
          }
      },
-     runOnShow ={
-            if(ongoing){
-                it.mainText = "you continue ur battle with ${enemy.name}. ${enemy.HealthStatus()}. ${Hero.HealthStatus()}"
-            }
-
+    runOnShow ={
+        if(ongoing){
+            it.mainText = "you continue ur battle with ${enemy.name}. ${enemy.HealthStatus()}. ${Hero.HealthStatus()}"
         }
+    }
 )
 
 class HitEnemyScene(enemy: Fightable,responseScene:Scene,winScene: Scene,weapon: Weapon): Scene(
@@ -155,8 +154,7 @@ class HitEnemyScene(enemy: Fightable,responseScene:Scene,winScene: Scene,weapon:
             }
             if(Hero.ailment is CombatEffect.Stun) Hero.ailment = CombatEffect.None()
         }
-){
-}
+)
 
 class GetHitScene(enemy: Fightable,responseScene: Scene):Scene(
         numberOfButtons = 1,
@@ -192,7 +190,7 @@ class SidePitScene():Scene(
 )
 
 class WinGameScene():Scene(
-        mainText =  "You have conquered the mountain and\nreached the highest peak. You may now rest\nyour head weary traveeller",
+        mainText =  "You have conquered the mountain and reached the highest peak. You may now rest your head weary traveller. I am writing more to test out the line wrap functionality",
         nextScene1 =  { WelcomeScene() },
         button1Text = "I am the best!",
         numberOfButtons = 1

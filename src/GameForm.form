@@ -7,9 +7,13 @@
     <properties/>
     <border type="none"/>
     <children>
-      <component id="ee810" class="javax.swing.JTextArea" binding="textArea1" default-binding="true">
+      <component id="1fa07" class="javax.swing.JTextArea" binding="textArea1">
         <constraints border-constraint="Center"/>
-        <properties/>
+        <properties>
+          <focusable value="false"/>
+          <lineWrap value="true"/>
+          <text value="Label"/>
+        </properties>
       </component>
       <grid id="f8120" layout-manager="BorderLayout" hgap="0" vgap="0">
         <constraints border-constraint="South"/>
