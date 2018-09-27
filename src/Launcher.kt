@@ -37,15 +37,15 @@ object UserInterface{ val gameForm = GameForm() }
 
 object Hero:Fightable(
         name = "Our hero",
-        mainWeapon =  Weapon("starter knife",4,3,CombatEffect.None()),
+        mainWeapon =  Weapon("Starter knife",4,3,CombatEffect.None()),
         health = 10
 ){
     var wand = false
-    var leftHand:Weapon = Weapon("starter buckler",1,9,CombatEffect.Stun(50))
+    var leftHand:Weapon = Weapon("Starter buckler",1,9,CombatEffect.Stun(50))
 }
 
 class WelcomeScene():Scene(
-    mainText =  "Welcome son",
+    mainText =  "Welcome, my child. May your stay here be less painful than it is for most.",
     button1Text =  "go into a dark pit",
     button2Text = "refuse to endanger yourself",
     nextScene1 = { CenterPitScene() },
