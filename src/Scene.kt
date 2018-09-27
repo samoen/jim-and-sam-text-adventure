@@ -6,9 +6,11 @@ open class Scene(
         var button2Text:String="",
         var nextScene1:()->Scene={Scene()},
         var nextScene2:()->Scene={Scene()},
-        var numberOfButtons:Int = 2
+        var numberOfButtons:Int = 2,
+        var runOnShow:(Scene)->Unit = {}
 ){
     fun ShowScene(){
+        runOnShow.invoke(this)
         if(numberOfButtons == 2){
             UserInterface.gameForm.button2.isVisible = true
         }else if(numberOfButtons == 1){

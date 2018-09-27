@@ -45,16 +45,15 @@ object Hero:Fightable(
 }
 
 class WelcomeScene():Scene(
-    "Welcome son",
-    "go into a dark pit",
-    "refuse to endanger yourself",
-    { CenterPitScene() },
-    { ScaredScene() }
-){
-    init {
+    mainText =  "Welcome son",
+    button1Text =  "go into a dark pit",
+    button2Text = "refuse to endanger yourself",
+    nextScene1 = { CenterPitScene() },
+    nextScene2 = { ScaredScene() },
+    runOnShow ={
         Hero.health = 10
     }
-}
+)
 class ScaredScene():Scene(
     mainText = "dont be scared, ${Hero.name}",
     nextScene1 = { WelcomeScene() },
@@ -63,27 +62,26 @@ class ScaredScene():Scene(
 )
 
 class CenterPitScene():Scene(
-     "you in pit" ,
-    "fight like man",
-    "avoid danger",
-    {
+     mainText = "you in pit" ,
+    button1Text = "fight like man",
+    button2Text = "avoid danger",
+    nextScene1 = {
         FightScene(
                 Fightable("kobold",Weapon("kobold dagger",3,5,CombatEffect.None()), 8),
                 false,
                 SidePitScene()
         )
     },
-    {DeathScene()}
-){
-    init {
+    nextScene2 = {DeathScene()},
+    runOnShow = {
         if(Hero.wand){
-            button2Text = "use ur wand"
-            nextScene2 = {
+            it.button2Text = "use ur wand"
+            it.nextScene2 = {
                 WinGameScene()
             }
         }
     }
-}
+)
 
 class DeathScene():Scene(
     mainText =  "you just straight up die, son",
@@ -97,106 +95,100 @@ class FindWandScene():Scene(
     nextScene1 = {
         CenterPitScene()
     },
-    numberOfButtons = 1
-){
-    init {
+    numberOfButtons = 1,
+    runOnShow = {
         if(Hero.wand){
-            mainText = "you see the empty altar where the wand was"
+            it.mainText = "you see the empty altar where the wand was"
         }else{
-            mainText = "you sneak around and find a wand!"
+            it.mainText = "you sneak around and find a wand!"
             Hero.wand = true
         }
     }
-}
-
+)
 
 class FightScene(enemy: Fightable,ongoing:Boolean,winScene:Scene): Scene(
-    "A ${enemy.name} appears! ${enemy.HealthStatus()}. ${Hero.HealthStatus()}",
-    "use your ${Hero.leftHand.name}",
-    "use your ${Hero.mainWeapon.name}",
-     {
+    mainText = "A ${enemy.name} appears! ${enemy.HealthStatus()}. ${Hero.HealthStatus()}",
+    button1Text = "use your ${Hero.leftHand.name}",
+    button2Text = "use your ${Hero.mainWeapon.name}",
+    nextScene1 = {
          if(Hero.leftHand.speed>enemy.mainWeapon.speed){
-             HitEnemyScene(enemy,{GetHitScene(enemy,{FightScene(enemy,true,winScene)})},winScene,Hero.leftHand)
+             HitEnemyScene(enemy,GetHitScene(enemy,FightScene(enemy,true,winScene)),winScene,Hero.leftHand)
          }else{
-             GetHitScene(enemy,{HitEnemyScene(enemy,{FightScene(enemy,true,winScene)},winScene,Hero.leftHand)} )
+             GetHitScene(enemy,HitEnemyScene(enemy,FightScene(enemy,true,winScene),winScene,Hero.leftHand))
+         }
+    },
+    nextScene2 = {
+         if(Hero.mainWeapon.speed>enemy.mainWeapon.speed){
+             HitEnemyScene(enemy,GetHitScene(enemy,FightScene(enemy,true,winScene)),winScene,Hero.mainWeapon)
+         }else{
+             GetHitScene(enemy, HitEnemyScene(enemy,  FightScene(enemy, true, winScene) , winScene, Hero.mainWeapon))
          }
      },
-     {
-         if(Hero.mainWeapon.speed>enemy.mainWeapon.speed){
-             HitEnemyScene(enemy,{GetHitScene(enemy,{FightScene(enemy,true,winScene)})},winScene,Hero.mainWeapon)
-         }else{
-             GetHitScene(enemy, {HitEnemyScene(enemy, { FightScene(enemy, true, winScene) }, winScene, Hero.mainWeapon)})
-         }
-     }
-){
-    init {
-        if(ongoing){
-            mainText = "you continue ur battle with ${enemy.name}. ${enemy.HealthStatus()}. ${Hero.HealthStatus()}"
+     runOnShow ={
+            if(ongoing){
+                it.mainText = "you continue ur battle with ${enemy.name}. ${enemy.HealthStatus()}. ${Hero.HealthStatus()}"
+            }
+
         }
+)
 
-    }
-
+class HitEnemyScene(enemy: Fightable,responseScene:Scene,winScene: Scene,weapon: Weapon): Scene(
+        numberOfButtons = 1,
+        runOnShow = {
+            val newEnemyHealth = enemy.health - weapon.damage
+            val rand = Random().nextInt(100)
+            val ail = Hero.ailment
+            if(ail is CombatEffect.Stun && ail.chance>rand){
+                it.mainText = "${Hero.name} is stunned and missed their turn!"
+                it.button1Text = "damn"
+                it.nextScene1 = {responseScene}
+            }else if(newEnemyHealth<1){
+                it.mainText = "You struck down the ${enemy.name}!"
+                it.nextScene1 = {winScene}
+                it.button1Text = "awesome"
+            }else{
+                enemy.health = newEnemyHealth
+                enemy.ailment = weapon.wepType
+                it.mainText = "You hit the ${enemy.name} for ${weapon.damage} damage"
+                it.nextScene1 = {responseScene}
+                it.button1Text = "take that!"
+            }
+            if(Hero.ailment is CombatEffect.Stun) Hero.ailment = CombatEffect.None()
+        }
+){
 }
 
-class HitEnemyScene(enemy: Fightable,responseScene:()->Scene,winScene: Scene,weapon: Weapon): Scene(
-        numberOfButtons = 1
-){
-    init {
-        val newEnemyHealth = enemy.health - weapon.damage
-        val rand = Random().nextInt(100)
-        val ail = Hero.ailment
-        if(ail is CombatEffect.Stun && ail.chance>rand){
-            mainText = "${Hero.name} is stunned and missed their turn!"
-            button1Text = "damn"
-            nextScene1 = responseScene
-            Hero.ailment = CombatEffect.None()
-        }else if(newEnemyHealth<1){
-            mainText = "You struck down the ${enemy.name}!"
-            nextScene1 = {winScene}
-            button1Text = "awesome"
-        }else{
-            enemy.health = newEnemyHealth
-            enemy.ailment = weapon.wepType
-            mainText = "You hit the ${enemy.name} for ${weapon.damage} damage"
-            nextScene1 = responseScene
-            button1Text = "take that!"
+class GetHitScene(enemy: Fightable,responseScene: Scene):Scene(
+        numberOfButtons = 1,
+        runOnShow ={
+            val newhealth = Hero.health - enemy.mainWeapon.damage
+            val rand = Random().nextInt(100)
+            val ail = enemy.ailment
+            if(ail is CombatEffect.Stun && ail.chance>rand){
+                it.mainText = "the ${enemy.name} is stunned and missed their turn!"
+                it.button1Text = "cool"
+                it.nextScene1 = {responseScene}
+            }else if(newhealth<1){
+                it.mainText = "you succumb to your wounds and die son"
+                it.nextScene1 = { WelcomeScene() }
+                it.button1Text = "awww :("
+            }else{
+                Hero.health = newhealth
+                Hero.ailment = enemy.mainWeapon.wepType
+                it.mainText = "The ${enemy.name} hits you, your health is now ${Hero.health}"
+                it.nextScene1 = {responseScene}
+                it.button1Text = "I can handle it"
+            }
+            if(enemy.ailment is CombatEffect.Stun) enemy.ailment = CombatEffect.None()
         }
-    }
-}
-
-class GetHitScene(enemy: Fightable,responseScene: ()->Scene):Scene(
-        numberOfButtons = 1
-){
-    init {
-        val newhealth = Hero.health - enemy.mainWeapon.damage
-        val rand = Random().nextInt(100)
-        val ail = enemy.ailment
-        if(ail is CombatEffect.Stun && ail.chance>rand){
-            mainText = "the ${enemy.name} is stunned and missed their turn!"
-            button1Text = "cool"
-            nextScene1 = responseScene
-
-            enemy.ailment = CombatEffect.None()
-        }else if(newhealth<1){
-            mainText = "you succumb to your wounds and die son"
-            nextScene1 = { WelcomeScene() }
-            button1Text = "awww :("
-        }else{
-            Hero.health = newhealth
-            Hero.ailment = enemy.mainWeapon.wepType
-            mainText = "The ${enemy.name} hits you, your health is now ${Hero.health}"
-            nextScene1 = responseScene
-            button1Text = "I can handle it"
-        }
-    }
-}
+)
 
 class SidePitScene():Scene(
-        "You look around and see many small passages. behind you is the pit center",
-        "go back center pit",
-        "sneak around",
-        {CenterPitScene()},
-        {FindWandScene()}
+        mainText = "You look around and see many small passages. behind you is the pit center",
+        button1Text = "go back center pit",
+        button2Text = "sneak around",
+        nextScene1 = {CenterPitScene()},
+        nextScene2 = {FindWandScene()}
 )
 
 class WinGameScene():Scene(
