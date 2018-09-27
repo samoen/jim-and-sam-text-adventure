@@ -54,16 +54,10 @@ class WelcomeScene():Scene(
 }
 class ScaredScene():Scene(
     mainText = "dont be scared, ${Hero.name}",
-    nextScene1 = {
-        UserInterface.gameForm.button2.isVisible = true
-        WelcomeScene()
-    },
-    button1Text = "okay.."
-){
-    init {
-        UserInterface.gameForm.button2.isVisible=false
-    }
-}
+    nextScene1 = { WelcomeScene() },
+    button1Text = "okay..",
+    numberOfButtons = 1
+)
 
 class CenterPitScene():Scene(
      "you in pit" ,
@@ -90,26 +84,19 @@ class CenterPitScene():Scene(
 
 class DeathScene():Scene(
     mainText =  "you just straight up die, son",
-    nextScene1 =  {
-        UserInterface.gameForm.button2.isVisible = true
-        WelcomeScene()
-    },
-    button1Text = "oh holy mama, restart me"
-){
-    init {
-        UserInterface.gameForm.button2.isVisible = false
-    }
-}
+    nextScene1 =  { WelcomeScene() },
+    button1Text = "oh holy mama, restart me",
+    numberOfButtons = 1
+)
 
 class FindWandScene():Scene(
     button1Text =  "go back to the center of the pit",
     nextScene1 = {
-        UserInterface.gameForm.button2.isVisible = true
         CenterPitScene()
-    }
+    },
+    numberOfButtons = 1
 ){
     init {
-        UserInterface.gameForm.button2.isVisible = false
         if(Hero.wand){
             mainText = "you see the empty altar where the wand was"
         }else{
@@ -148,7 +135,9 @@ class FightScene(enemy: Enemy,ongoing:Boolean,winScene:Scene): Scene(
 
 }
 
-class HitEnemyScene(enemy: Enemy,responseScene:()->Scene,winScene: Scene,weapon: Weapon): Scene(){
+class HitEnemyScene(enemy: Enemy,responseScene:()->Scene,winScene: Scene,weapon: Weapon): Scene(
+        numberOfButtons = 1
+){
     init {
         val newEnemyHealth = enemy.health - weapon.damage
         if(Hero.ailment is CombatEffect.Stun){
@@ -170,33 +159,27 @@ class HitEnemyScene(enemy: Enemy,responseScene:()->Scene,winScene: Scene,weapon:
     }
 }
 
-class GetHitScene(enemy: Enemy,responseScene: Scene):Scene(){
+class GetHitScene(enemy: Enemy,responseScene: Scene):Scene(
+        numberOfButtons = 1
+    ){
     init {
-        UserInterface.gameForm.button2.isVisible = false
         val newhealth = Hero.health - enemy.rightHand.damage
         if(enemy.ailment is CombatEffect.Stun){
             mainText = "the ${enemy.name} is stunned and missed their turn!"
             button1Text = "cool"
             nextScene1 = {
-                UserInterface.gameForm.button2.isVisible = true
                 responseScene
             }
             enemy.ailment = CombatEffect.None()
         }else if(newhealth<1){
             mainText = "you succumb to your wounds and die son"
-            nextScene1 = {
-                UserInterface.gameForm.button2.isVisible = true
-                WelcomeScene()
-            }
+            nextScene1 = { WelcomeScene() }
             button1Text = "awww :("
         }else{
             Hero.health = newhealth
             Hero.ailment = enemy.rightHand.wepType
             mainText = "The ${enemy.name} hits you, your health is now ${Hero.health}"
-            nextScene1 = {
-                UserInterface.gameForm.button2.isVisible = true
-                responseScene
-            }
+            nextScene1 = { responseScene }
             button1Text = "I can handle it"
         }
     }
@@ -212,13 +195,7 @@ class SidePitScene():Scene(
 
 class WinGameScene():Scene(
         mainText =  "You have conquered the mountain and\nreached the highest peak. You may now rest\nyour head weary traveeller",
-        nextScene1 =  {
-            UserInterface.gameForm.button2.isVisible = true
-            WelcomeScene()
-        },
-        button1Text = "I am the best!"
-){
-    init {
-        UserInterface.gameForm.button2.isVisible = false
-    }
-}
+        nextScene1 =  { WelcomeScene() },
+        button1Text = "I am the best!",
+        numberOfButtons = 1
+)

@@ -5,10 +5,18 @@ open class Scene(
         var button1Text:String="",
         var button2Text:String="",
         var nextScene1:()->Scene={Scene()},
-        var nextScene2:()->Scene={Scene()}
+        var nextScene2:()->Scene={Scene()},
+        var numberOfButtons:Int = 2
 )
 {
     fun ShowScene(){
+        if(numberOfButtons == 2){
+            UserInterface.gameForm.button2.isVisible = true
+        }else{
+            if(UserInterface.gameForm.button2.isVisible)
+                UserInterface.gameForm.button2.isVisible = false
+        }
+
         UserInterface.gameForm.textArea1.text = mainText
         UserInterface.gameForm.button1.text = button1Text
         UserInterface.gameForm.button2.text = button2Text
