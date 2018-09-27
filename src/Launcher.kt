@@ -15,14 +15,20 @@ class Launcher {
 }
 
 open class Item(var name:String)
-enum class WepType{NORMAL,STUNNER}
-class Weapon(var wepname: String,var damage: Int,var speed:Int,var wepType:WepType):Item(wepname){}
+
+sealed class CombatEffect(){
+    class None:CombatEffect()
+    class Stun(var chance:Int):CombatEffect()
+}
+
+class Weapon(var wepname: String,var damage: Int,var speed:Int,var wepType:CombatEffect):Item(wepname){}
 
 open class Fightable(
         var name:String="larry",
-        var rightHand: Weapon = Weapon("starter knife",4,3,WepType.NORMAL),
+        var rightHand: Weapon = Weapon("starter knife",4,3,CombatEffect.None()),
         var health:Int=10
 ){
+    var ailment:CombatEffect = CombatEffect.None()
     fun HealthStatus() = "${this.name} has ${this.health} health"
 }
 
@@ -30,7 +36,7 @@ object UserInterface{ val gameForm = GameForm() }
 
 object Hero:Fightable(){
     var wand = false
-    var leftHand:Weapon = Weapon("starter buckler",1,9,WepType.STUNNER)
+    var leftHand:Weapon = Weapon("starter buckler",1,9,CombatEffect.Stun(50))
 }
 
 class Enemy(name: String, weapon: Weapon, health: Int):Fightable(name, weapon, health)
@@ -65,9 +71,9 @@ class CenterPitScene():Scene(
     "avoid danger",
     {
         FightScene(
-            Enemy("kobold",Weapon("kobold dagger",3,5,WepType.NORMAL), 8),
-            false,
-            SidePitScene()
+                Enemy("kobold",Weapon("kobold dagger",3,5,CombatEffect.None()), 8),
+                false,
+                SidePitScene()
         )
     },
     {DeathScene()}
@@ -129,7 +135,7 @@ class FightScene(enemy: Enemy,ongoing:Boolean,winScene:Scene): Scene(
          if(Hero.rightHand.speed>enemy.rightHand.speed){
              HitEnemyScene(enemy,{GetHitScene(enemy,FightScene(enemy,true,winScene))},winScene,Hero.rightHand)
          }else{
-             GetHitScene(enemy,HitEnemyScene(enemy,{FightScene(enemy,true,winScene)},winScene,Hero.rightHand) )
+             GetHitScene(enemy, HitEnemyScene(enemy, { FightScene(enemy, true, winScene) }, winScene, Hero.rightHand))
          }
      }
 ){
@@ -145,12 +151,18 @@ class FightScene(enemy: Enemy,ongoing:Boolean,winScene:Scene): Scene(
 class HitEnemyScene(enemy: Enemy,responseScene:()->Scene,winScene: Scene,weapon: Weapon): Scene(){
     init {
         val newEnemyHealth = enemy.health - weapon.damage
-        if(newEnemyHealth<1){
+        if(Hero.ailment is CombatEffect.Stun){
+            mainText = "${Hero.name} is stunned and missed their turn!"
+            button1Text = "damn"
+            nextScene1 = responseScene
+            Hero.ailment = CombatEffect.None()
+        }else if(newEnemyHealth<1){
             mainText = "You struck down the ${enemy.name}!"
             nextScene1 = {winScene}
             button1Text = "awesome"
         }else{
             enemy.health = newEnemyHealth
+            enemy.ailment = weapon.wepType
             mainText = "You hit the ${enemy.name} for ${weapon.damage} damage"
             nextScene1 = responseScene
             button1Text = "take that!"
@@ -162,7 +174,15 @@ class GetHitScene(enemy: Enemy,responseScene: Scene):Scene(){
     init {
         UserInterface.gameForm.button2.isVisible = false
         val newhealth = Hero.health - enemy.rightHand.damage
-        if(newhealth<1){
+        if(enemy.ailment is CombatEffect.Stun){
+            mainText = "the ${enemy.name} is stunned and missed their turn!"
+            button1Text = "cool"
+            nextScene1 = {
+                UserInterface.gameForm.button2.isVisible = true
+                responseScene
+            }
+            enemy.ailment = CombatEffect.None()
+        }else if(newhealth<1){
             mainText = "you succumb to your wounds and die son"
             nextScene1 = {
                 UserInterface.gameForm.button2.isVisible = true
@@ -171,6 +191,7 @@ class GetHitScene(enemy: Enemy,responseScene: Scene):Scene(){
             button1Text = "awww :("
         }else{
             Hero.health = newhealth
+            Hero.ailment = enemy.rightHand.wepType
             mainText = "The ${enemy.name} hits you, your health is now ${Hero.health}"
             nextScene1 = {
                 UserInterface.gameForm.button2.isVisible = true
