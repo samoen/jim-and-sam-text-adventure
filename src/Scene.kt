@@ -1,4 +1,5 @@
 import java.awt.event.ActionEvent
+import javax.swing.ImageIcon
 
 open class Scene(
         var mainText:String="",
@@ -16,6 +17,9 @@ open class Scene(
         }else if(numberOfButtons == 1){
             UserInterface.gameForm.button2.isVisible = false
         }
+
+        UserInterface.gameForm.ImageLabel.icon = ImageIcon("src/testimage.png")
+
         UserInterface.gameForm.textArea1.text = mainText
         UserInterface.gameForm.button1.text = button1Text
         UserInterface.gameForm.button2.text = button2Text

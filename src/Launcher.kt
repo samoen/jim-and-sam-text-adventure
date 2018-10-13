@@ -9,7 +9,7 @@ class Launcher {
             val frm = JFrame()
             frm.contentPane = UserInterface.gameForm.panel1
             frm.isVisible = true
-            frm.setSize(500,500)
+            frm.setSize(1000,1000)
             WelcomeScene().ShowScene()
         }
     }

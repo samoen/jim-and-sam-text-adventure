@@ -5,4 +5,6 @@ public class GameForm {
     public JPanel panel1;
     public JTextArea textArea1;
     public JButton button2;
+    public JLabel ImageLabel;
+    private JButton button3;
 }
