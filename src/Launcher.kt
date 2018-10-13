@@ -27,7 +27,8 @@ class Weapon(var wepname: String,var damage: Int,var speed:Int,var wepType:Comba
 open class Fightable(
         var name:String,
         var mainWeapon: Weapon,
-        var health:Int
+        var health:Int,
+        var armor:Int
 ){
     var ailment:CombatEffect = CombatEffect.None()
     fun HealthStatus() = "${this.name} has ${this.health} health"
@@ -38,8 +39,11 @@ object UserInterface{ val gameForm = GameForm() }
 object Hero:Fightable(
         name = "Our hero",
         mainWeapon =  Weapon("Starter knife",4,3,CombatEffect.None()),
-        health = 10
+        health = 10,
+        armor = 5
+
 ){
+    var lastCheckpointScene:Scene = WelcomeScene()
     var wand = false
     var leftHand:Weapon = Weapon("Starter buckler",1,9,CombatEffect.Stun(50))
 }
@@ -49,14 +53,14 @@ class WelcomeScene():Scene(
     button1Text =  "go into a dark pit",
     button2Text = "refuse to endanger yourself",
     nextScene1 = { CenterPitScene() },
-    nextScene2 = { ScaredScene() },
-    runOnShow ={
-        Hero.health = 10
+    nextScene2 = { ScaredScene(WelcomeScene()) },
+    runOnShow = {
+        Hero.lastCheckpointScene = WelcomeScene()
     }
 )
-class ScaredScene():Scene(
+class ScaredScene(backScene: Scene):Scene(
     mainText = "dont be scared, ${Hero.name}",
-    nextScene1 = { WelcomeScene() },
+    nextScene1 = { backScene },
     button1Text = "okay..",
     numberOfButtons = 1
 )
@@ -67,7 +71,7 @@ class CenterPitScene():Scene(
     button2Text = "avoid danger",
     nextScene1 = {
         FightScene(
-                Fightable("kobold",Weapon("kobold dagger",3,5,CombatEffect.None()), 8),
+                Fightable("kobold",Weapon("kobold dagger",3,5,CombatEffect.None()), 8,armor = 3),
                 false,
                 SidePitScene()
         )
@@ -77,51 +81,73 @@ class CenterPitScene():Scene(
         if(Hero.wand){
             it.button2Text = "use ur wand"
             it.nextScene2 = {
-                MagicUpgradeScene()
+                MagicUpgradeScene(CenterPitScene())
             }
         }
     }
 )
 
-class MagicUpgradeScene():Scene(
-        mainText =  "The wand presents you with an epic choice, that will determine it's effect..... If you awoke on a deserted island would you:",
-        nextScene1 =  { MagicDefenderScene() },
-        nextScene2 =  { MagicAttackerScene() },
-        button1Text = "Find water and build shelter",
-        button2Text = "Start a fire and cook some meat",
-        numberOfButtons = 2,
-        runOnShow ={
-            Hero.health = 10
-        }
+class MagicUpgradeScene(backScene: Scene):Scene(
+        mainText =  "You examine the wand and feel yourself pulled into a strange realm. You find yourself in the realm of the Wandman." +
+                "He says he can heal you or empower your defence capabilities with his magic.",
+        nextScene1 =  {
+            object :Scene(
+                nextScene1 =  { MagicUpgradeScene(backScene) },
+                button1Text = "Speak to the Wandman",
+                numberOfButtons = 1,
+                runOnShow ={
+                    if(Hero.armor < 6) {
+                        Hero.armor++
+                        it.mainText = "You are imbued with defensive power, your armor value increases and you are fully " +
+                                "healed. Your armour is now ${Hero.armor}."
+                    }
+                    else {
+                        it.mainText = "You have already reaped the benefits of this magical water or whatever. You return " +
+                                "to the last place"
+                    }
 
+                }
 
+            ){}
+        },
+        nextScene2 =  {
+            object :Scene(
+                nextScene1 =  { MagicUpgradeScene(backScene) },
+                button1Text = "Speak to the Wandman",
+                numberOfButtons = 1,
+                runOnShow = {
+                    if(Hero.health < 10){
+                        Hero.health++
+                        it.mainText =  "You are imbued with vitality. Your health increases and you are fully healed. " +
+                                "Your health is now ${Hero.health}."
+                    } else
+                        it.mainText = "You are already completely healed. You return to the wand master."
+
+                }
+            ){}
+        },
+        nextScene3 =  { backScene },
+        button1Text = "Accept the Wandman's defensive enchantment",
+        button2Text = "Use the Wandman's healing magic",
+        button3Text = "Leave the realm of the Wandman",
+        numberOfButtons = 3
 )
-
-class MagicDefenderScene():Scene(
-        mainText =  "You are embued with defensive power, you deal extra damage with your off hand weapon and are fully healed",
-        nextScene1 =  { CenterPitScene() },
-        button1Text = "Go back to the pit",
-        numberOfButtons = 1,
-        runOnShow ={
-            Hero.leftHand.damage ++
-        }
-
-)
-
-class MagicAttackerScene():Scene(
-        mainText =  "You are embued with offensive power, you deal extra damage with your off hand weapon and are fully healed",
-        nextScene1 =  { CenterPitScene() },
-        button1Text = "Go back to the pit",
-        numberOfButtons = 1,
-        runOnShow = {
-            Hero.mainWeapon.damage++
-        }
-)
-
 
 class DeathScene():Scene(
     mainText =  "you just straight up die, son",
-    nextScene1 =  { WelcomeScene() },
+    nextScene1 =  {
+        object :Scene(
+            mainText = "You awake to find your wounds healed, but your items are lost and your magical benefits removed. " +
+                    "You will return to your last checkpoint",
+            button1Text = "okay",
+            nextScene1 = { Hero.lastCheckpointScene },
+            runOnShow = {
+                Hero.health = 10
+                Hero.wand = false
+            },
+            numberOfButtons = 1
+        ){}
+    },
     button1Text = "oh holy mama, restart me",
     numberOfButtons = 1
 )
@@ -133,6 +159,7 @@ class FindWandScene():Scene(
     },
     numberOfButtons = 1,
     runOnShow = {
+        Hero.lastCheckpointScene = FindWandScene()
         if(Hero.wand){
             it.mainText = "you see the empty altar where the wand was"
         }else{
@@ -203,9 +230,9 @@ class GetHitScene(enemy: Fightable,responseScene: Scene):Scene(
                 it.button1Text = "cool"
                 it.nextScene1 = {responseScene}
             }else if(newhealth<1){
-                it.mainText = "you succumb to your wounds and die son"
-                it.nextScene1 = { WelcomeScene() }
-                it.button1Text = "awww :("
+                it.mainText = "The ${enemy.name} hits you a fatal blow."
+                it.nextScene1 = { DeathScene() }
+                it.button1Text = "Next"
             }else{
                 Hero.health = newhealth
                 Hero.ailment = enemy.mainWeapon.wepType
@@ -227,7 +254,7 @@ class SidePitScene():Scene(
 
 class WinGameScene():Scene(
         mainText =  "You have conquered the mountain and reached the highest peak. You may now rest your head weary traveller. I am writing more to test out the line wrap functionality",
-        nextScene1 =  { WelcomeScene() },
+        nextScene1 =  { DeathScene() },
         button1Text = "I am the best!",
         numberOfButtons = 1
 )
