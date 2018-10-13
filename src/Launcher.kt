@@ -77,11 +77,47 @@ class CenterPitScene():Scene(
         if(Hero.wand){
             it.button2Text = "use ur wand"
             it.nextScene2 = {
-                WinGameScene()
+                MagicUpgradeScene()
             }
         }
     }
 )
+
+class MagicUpgradeScene():Scene(
+        mainText =  "The wand presents you with an epic choice, that will determine it's effect..... If you awoke on a deserted island would you:",
+        nextScene1 =  { MagicDefenderScene() },
+        nextScene2 =  { MagicAttackerScene() },
+        button1Text = "Find water and build shelter",
+        button2Text = "Start a fire and cook some meat",
+        numberOfButtons = 2,
+        runOnShow ={
+            Hero.health = 10
+        }
+
+
+)
+
+class MagicDefenderScene():Scene(
+        mainText =  "You are embued with defensive power, you deal extra damage with your off hand weapon and are fully healed",
+        nextScene1 =  { CenterPitScene() },
+        button1Text = "Go back to the pit",
+        numberOfButtons = 1,
+        runOnShow ={
+            Hero.leftHand.damage ++
+        }
+
+)
+
+class MagicAttackerScene():Scene(
+        mainText =  "You are embued with offensive power, you deal extra damage with your off hand weapon and are fully healed",
+        nextScene1 =  { CenterPitScene() },
+        button1Text = "Go back to the pit",
+        numberOfButtons = 1,
+        runOnShow = {
+            Hero.mainWeapon.damage++
+        }
+)
+
 
 class DeathScene():Scene(
     mainText =  "you just straight up die, son",
