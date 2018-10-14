@@ -1,4 +1,3 @@
-
 import java.util.*
 import javax.swing.JFrame
 
@@ -15,6 +14,9 @@ class Launcher {
     }
 }
 
+class UndeadKnight():Enemy("Undead Knight",Weapon("Rusty great sword",2,2,CombatEffect.None()), 12,4,15)
+class Kobold():Enemy("kobold",Weapon("kobold dagger",3,5, CombatEffect.None()), 8,3,4)
+
 open class Item(var name:String)
 
 sealed class CombatEffect(){
@@ -27,25 +29,59 @@ class Weapon(var wepname: String,var damage: Int,var speed:Int,var wepType:Comba
 open class Fightable(
         var name:String,
         var mainWeapon: Weapon,
-        var health:Int,
+        var maxHealth:Int,
         var armor:Int
 ){
+    var currentHealth:Int = maxHealth
     var ailment:CombatEffect = CombatEffect.None()
-    fun HealthStatus() = "${this.name} has ${this.health} health"
+    fun HealthStatus() = "${this.name} has ${this.currentHealth} currentHealth"
 }
+
+open class Enemy(name: String,mainWeapon: Weapon,maxHealth: Int,armor: Int,var expGiven: Int):Fightable(name, mainWeapon, maxHealth, armor){}
 
 object UserInterface{ val gameForm = GameForm() }
 
 object Hero:Fightable(
         name = "Our hero",
         mainWeapon =  Weapon("Starter knife",4,3,CombatEffect.None()),
-        health = 10,
+        maxHealth = 10,
         armor = 5
 
 ){
+    var heroLevel = 1
+    var heroExp = 0
+    var lastCheckpointHero:Hero = this
     var lastCheckpointScene:Scene = WelcomeScene()
     var wand = false
     var leftHand:Weapon = Weapon("Starter buckler",1,9,CombatEffect.Stun(50))
+    fun needsLevelUp():Boolean{
+        if(heroLevel==1 && heroExp>7) return true
+        if(heroLevel==2 && heroExp>15)return true
+        return false
+    }
+    fun levelUp(){
+        Hero.heroLevel++
+        Hero.levelBoosts.get(heroLevel-2).applyBoost()
+        Hero.currentHealth = Hero.maxHealth
+    }
+    fun hitCheckpoint(scene: Scene){
+        lastCheckpointScene = scene
+        lastCheckpointHero = this
+    }
+    fun loadCheckpointHero(){
+        heroExp = lastCheckpointHero.heroExp
+        currentHealth = lastCheckpointHero.currentHealth
+        armor = lastCheckpointHero.armor
+        maxHealth = lastCheckpointHero.maxHealth
+        heroLevel = lastCheckpointHero.heroLevel
+    }
+
+    class boost(val maxHealthBoost:Int){
+        fun applyBoost(){
+            Hero.maxHealth+=maxHealthBoost
+        }
+    }
+    val levelBoosts:List<boost> = listOf(boost(1), boost(2), boost(3))
 }
 
 class WelcomeScene():Scene(
@@ -55,7 +91,7 @@ class WelcomeScene():Scene(
     nextScene1 = { CenterPitScene() },
     nextScene2 = { ScaredScene(WelcomeScene()) },
     runOnShow = {
-        Hero.lastCheckpointScene = WelcomeScene()
+        Hero.hitCheckpoint(WelcomeScene())
     }
 )
 class ScaredScene(backScene: Scene):Scene(
@@ -65,15 +101,17 @@ class ScaredScene(backScene: Scene):Scene(
     numberOfButtons = 1
 )
 
+
+
 class CenterPitScene():Scene(
     mainText = "you in pit" ,
     button1Text = "fight like man",
     button2Text = "avoid danger",
     nextScene1 = {
         FightScene(
-                Fightable("kobold",Weapon("kobold dagger",3,5,CombatEffect.None()), 8,armor = 3),
-                false,
-                SidePitScene()
+                enemy = Kobold(),
+                ongoing = false,
+                winScene = SidePitScene()
         )
     },
     nextScene2 = {DeathScene()},
@@ -81,7 +119,7 @@ class CenterPitScene():Scene(
         if(Hero.wand){
             it.button2Text = "use ur wand"
             it.nextScene2 = {
-                MagicUpgradeScene(CenterPitScene())
+                MagicUpgradeScene(barracks(1))
             }
         }
     }
@@ -116,10 +154,10 @@ class MagicUpgradeScene(backScene: Scene):Scene(
                 button1Text = "Speak to the Wandman",
                 numberOfButtons = 1,
                 runOnShow = {
-                    if(Hero.health < 10){
-                        Hero.health++
-                        it.mainText =  "You are imbued with vitality. Your health increases and you are fully healed. " +
-                                "Your health is now ${Hero.health}."
+                    if(Hero.currentHealth < Hero.maxHealth){
+                        Hero.currentHealth = Hero.maxHealth
+                        it.mainText =  "You are imbued with vitality. Your currentHealth increases and you are fully healed. " +
+                                "Your currentHealth is now ${Hero.currentHealth}."
                     } else
                         it.mainText = "You are already completely healed. You return to the wand master."
 
@@ -142,8 +180,9 @@ class DeathScene():Scene(
             button1Text = "okay",
             nextScene1 = { Hero.lastCheckpointScene },
             runOnShow = {
-                Hero.health = 10
-                Hero.wand = false
+                Hero.loadCheckpointHero()
+
+
             },
             numberOfButtons = 1
         ){}
@@ -159,7 +198,7 @@ class FindWandScene():Scene(
     },
     numberOfButtons = 1,
     runOnShow = {
-        Hero.lastCheckpointScene = FindWandScene()
+        Hero.hitCheckpoint(FindWandScene())
         if(Hero.wand){
             it.mainText = "you see the empty altar where the wand was"
         }else{
@@ -169,7 +208,27 @@ class FindWandScene():Scene(
     }
 )
 
-class FightScene(enemy: Fightable,ongoing:Boolean,winScene:Scene): Scene(
+class barracks(mode:Int) : Scene(
+        button1Text = "Search the barracks",
+        button2Text = "Use the wand",
+        nextScene2 = { MagicUpgradeScene(barracks(3)) },
+        nextScene1 = {
+            FightScene(
+                    enemy = UndeadKnight(),
+                    ongoing = false,
+                    winScene = barracks(2)
+            )
+        },
+        runOnShow = {
+            Hero.hitCheckpoint(barracks(mode))
+            if(mode==1) it.mainText ="You are thrown out of the Wandman's realm and find yourself standing in front of an ancient barracks. Do you wish to search the building or return to the safety of the Wandman's realm?"
+            if(mode==2) it.mainText ="You stand again before the barracks. Do you wish to challenge an Undead Knight or return to the safety of the Wandman's realm?"
+            if(mode==3) it.mainText ="You are thrown out of the Wandman's realm and find yourself standing again before the barracks. Do you wish to challenge an Undead Knight or return back to the Wandman's realm?"
+        }
+)
+
+
+class FightScene(enemy: Enemy,ongoing:Boolean,winScene:Scene): Scene(
     mainText = "A ${enemy.name} appears! ${enemy.HealthStatus()}. ${Hero.HealthStatus()}",
     button1Text = "use your ${Hero.leftHand.name}",
     button2Text = "use your ${Hero.mainWeapon.name}",
@@ -194,10 +253,10 @@ class FightScene(enemy: Fightable,ongoing:Boolean,winScene:Scene): Scene(
     }
 )
 
-class HitEnemyScene(enemy: Fightable,responseScene:Scene,winScene: Scene,weapon: Weapon): Scene(
+class HitEnemyScene(enemy: Enemy,responseScene:Scene,winScene: Scene,weapon: Weapon): Scene(
         numberOfButtons = 1,
         runOnShow = {
-            val newEnemyHealth = enemy.health - weapon.damage
+            val newEnemyHealth = enemy.currentHealth - weapon.damage
             val rand = Random().nextInt(100)
             val ail = Hero.ailment
             if(ail is CombatEffect.Stun && ail.chance>rand){
@@ -205,11 +264,18 @@ class HitEnemyScene(enemy: Fightable,responseScene:Scene,winScene: Scene,weapon:
                 it.button1Text = "damn"
                 it.nextScene1 = {responseScene}
             }else if(newEnemyHealth<1){
-                it.mainText = "You struck down the ${enemy.name}!"
+                Hero.heroExp += enemy.expGiven
+                if (Hero.needsLevelUp()){
+                    Hero.levelUp()
+                    it.mainText = "You struck down the ${enemy.name} and level up! You now are level ${Hero.heroLevel}!."
+                }else{
+                    it.mainText = "You struck down the ${enemy.name}! You now have ${Hero.heroExp} experience points!."
+                }
                 it.nextScene1 = {winScene}
                 it.button1Text = "awesome"
+
             }else{
-                enemy.health = newEnemyHealth
+                enemy.currentHealth = newEnemyHealth
                 enemy.ailment = weapon.wepType
                 it.mainText = "You hit the ${enemy.name} for ${weapon.damage} damage"
                 it.nextScene1 = {responseScene}
@@ -217,12 +283,13 @@ class HitEnemyScene(enemy: Fightable,responseScene:Scene,winScene: Scene,weapon:
             }
             if(Hero.ailment is CombatEffect.Stun) Hero.ailment = CombatEffect.None()
         }
-)
+){
+}
 
 class GetHitScene(enemy: Fightable,responseScene: Scene):Scene(
         numberOfButtons = 1,
         runOnShow ={
-            val newhealth = Hero.health - enemy.mainWeapon.damage
+            val newhealth = Hero.currentHealth - enemy.mainWeapon.damage
             val rand = Random().nextInt(100)
             val ail = enemy.ailment
             if(ail is CombatEffect.Stun && ail.chance>rand){
@@ -234,9 +301,9 @@ class GetHitScene(enemy: Fightable,responseScene: Scene):Scene(
                 it.nextScene1 = { DeathScene() }
                 it.button1Text = "Next"
             }else{
-                Hero.health = newhealth
+                Hero.currentHealth = newhealth
                 Hero.ailment = enemy.mainWeapon.wepType
-                it.mainText = "The ${enemy.name} hits you, your health is now ${Hero.health}"
+                it.mainText = "The ${enemy.name} hits you for ${enemy.mainWeapon.damage} damage!"
                 it.nextScene1 = {responseScene}
                 it.button1Text = "I can handle it"
             }

@@ -6,4 +6,5 @@ public class GameForm {
     public JTextArea textArea1;
     public JButton button2;
     public JButton button3;
+    public JTextArea textArea2;
 }

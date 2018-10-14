@@ -47,5 +47,6 @@ open class Scene(
         UserInterface.gameForm.button3.addActionListener { _: ActionEvent ->
             nextScene3().ShowScene()
         }
+        UserInterface.gameForm.textArea2.text= "Leavel: ${Hero.heroLevel}\nExp: ${Hero.heroExp} \nMax Health: ${Hero.maxHealth}\nCurrent Health: ${Hero.currentHealth}\nArmour: ${Hero.armor}\n"
     }
 }
