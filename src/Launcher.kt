@@ -9,10 +9,23 @@ class Launcher {
             frm.contentPane = UserInterface.gameForm.panel1
             frm.isVisible = true
             frm.setSize(500,500)
-            WelcomeScene().ShowScene()
+            UserInterface.setupButtonListeners()
+            UserInterface.showScene{WelcomeScene()}
         }
     }
 }
+
+open class Scene(
+        var mainText:String="",
+        var button1Text:String="",
+        var button2Text:String="",
+        var button3Text:String="",
+        var nextScene1:()->Scene={Scene()},
+        var nextScene2:()->Scene={Scene()},
+        var nextScene3:()->Scene={Scene()},
+        var numberOfButtons:Int = 2,
+        var runOnShow:(Scene)->Unit = {}
+)
 
 class UndeadKnight():Enemy("Undead Knight",Weapon("Rusty great sword",2,2,CombatEffect.None()), 12,4,15)
 class Kobold():Enemy("kobold",Weapon("kobold dagger",3,5, CombatEffect.None()), 8,3,4)
@@ -39,7 +52,27 @@ open class Fightable(
 
 open class Enemy(name: String,mainWeapon: Weapon,maxHealth: Int,armor: Int,var expGiven: Int):Fightable(name, mainWeapon, maxHealth, armor){}
 
-object UserInterface{ val gameForm = GameForm() }
+object UserInterface{
+    var currentS :()->Scene = {Scene()}
+    val gameForm = GameForm()
+    fun setupButtonListeners() {
+        UserInterface.gameForm.button1.addActionListener { showScene(currentS.invoke().nextScene1) }
+        UserInterface.gameForm.button2.addActionListener { showScene(currentS.invoke().nextScene2) }
+        UserInterface.gameForm.button3.addActionListener { showScene(currentS.invoke().nextScene3) }
+    }
+    fun showScene(theScene:()->Scene){
+        val ascene = theScene.invoke()
+        ascene.runOnShow.invoke(ascene)
+        currentS = {ascene}
+        UserInterface.gameForm.button2.isVisible = ascene.numberOfButtons > 1
+        UserInterface.gameForm.button3.isVisible = ascene.numberOfButtons > 2
+        UserInterface.gameForm.textArea1.text = ascene.mainText
+        UserInterface.gameForm.button1.text = ascene.button1Text
+        UserInterface.gameForm.button2.text = ascene.button2Text
+        UserInterface.gameForm.button3.text = ascene.button3Text
+        UserInterface.gameForm.textArea2.text= "Leavel: ${Hero.heroLevel}\nExp: ${Hero.heroExp} \nMax Health: ${Hero.maxHealth}\nCurrent Health: ${Hero.currentHealth}\nArmour: ${Hero.armor}\n"
+    }
+}
 
 object Hero:Fightable(
         name = "Our hero",

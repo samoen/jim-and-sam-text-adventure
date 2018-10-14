@@ -60,7 +60,6 @@
         </constraints>
         <properties>
           <horizontalTextPosition value="2"/>
-          <icon value="knightman.png"/>
           <text value=""/>
         </properties>
       </component>
