@@ -4,7 +4,7 @@ import javax.swing.JFrame
 class Launcher {
     companion object {
         @JvmStatic
-        fun main(args: Array<String>){
+        fun main(args: Array<String>) {
             val frm = JFrame()
             frm.contentPane = UserInterface.gameForm.panel1
             frm.isVisible = true
@@ -16,13 +16,13 @@ class Launcher {
 }
 
 open class Scene(
-        var mainText:String="",
-        var button1Text:String="",
-        var button2Text:String="",
-        var button3Text:String="",
-        var nextScene1:()->Scene={Scene()},
-        var nextScene2:()->Scene={Scene()},
-        var nextScene3:()->Scene={Scene()},
+        var mainText:String = "",
+        var button1Text:String = "",
+        var button2Text:String = "",
+        var button3Text:String = "",
+        var nextScene1:()->Scene = {Scene()},
+        var nextScene2:()->Scene = {Scene()},
+        var nextScene3:()->Scene = {Scene()},
         var numberOfButtons:Int = 2,
         var runOnShow:(Scene)->Unit = {}
 )
@@ -57,13 +57,13 @@ sealed class CombatEffect {
     class Stun(var chance:Int):CombatEffect()
 }
 
-class Weapon(var wepname: String,var damage: Int,var speed:Int,var wepType:CombatEffect)
+class Weapon(var wepname:String,var damage:Int,var speed:Int,var wepType:CombatEffect)
 
 open class Fightable(
         var name:String,
         var mainWeapon: Weapon,
         var maxHealth:Int,
-        var armor:Int){
+        var armor:Int) {
         var currentHealth:Int = maxHealth
         var ailment:CombatEffect = CombatEffect.None()
         val healthStatus = {"${this.name} has ${this.currentHealth} currentHealth"}
@@ -71,7 +71,7 @@ open class Fightable(
 
 open class Enemy(name: String,mainWeapon: Weapon,maxHealth: Int,armor: Int,var expGiven: Int):Fightable(name, mainWeapon, maxHealth, armor)
 
-object UserInterface{
+object UserInterface {
     var currentS :()->Scene = {Scene()}
     val gameForm = GameForm()
     val setupButtonListeners:()->Unit = {
@@ -132,7 +132,7 @@ object Hero:Fightable(
     }
 }
 
-class WelcomeScene():Scene(
+class WelcomeScene:Scene(
         mainText =  "You open your eyes and as the world comes into focus you become scared. You've never been to this place and have no memory of getting here. An alien plant bobbing nearby seems to contort and from it a voice emanates.\n" +
                 "'Welcome, my child. May your stay here be less painful than it is for most.' The voice seems close, but the plant quickly softens and returns to its sunshine languishing.\nYou sit in shock for a moment before realising you have only two choices. In the near distance is an excavated bit of earth surrounded by crude palisade wall.\n" +
                 "You can go check for any signs of civilised life, or you can sit here and waste away.",
@@ -145,7 +145,7 @@ class WelcomeScene():Scene(
             Hero.hitCheckpoint(WelcomeScene())
         }
 )
-class ScaredScene(backScene: Scene):Scene(
+class ScaredScene(backScene:Scene):Scene(
         mainText = "You sit frozen, unsure of where you are or what to do. After some time, the temporary peace becomes discomfort. Stand, ${Hero.name}, and by fate be borne on wings of fire!",
         nextScene1 = { backScene },
         button1Text = "Stand and explore",
@@ -162,15 +162,17 @@ class CenterPitScene(mode:Int):Scene(
                     winScene = SidePitScene()
             )
         },
-        nextScene2 = {fleePit()},
+        nextScene2 = {FleePit()},
         runOnShow = {
-            if(mode==1) it.mainText="Barely more than a bit of cleared earth, the pit shows fresh signs of life. A dying fire. The Burnt bones of a recent meal.\n" +
+            if(mode==1) it.mainText = "Barely more than a bit of cleared earth, the pit shows fresh signs of life. A dying fire. The Burnt bones of a recent meal.\n" +
                     "You smell the wretched danger before you see it. A panting Kobold springs into action, appearing in front of you with eyes flashing at the chance for a fight." +
                     "Its scarred, stinking body and jagged blade tell you there's no chance for diplomacy."
-            if(mode==2) it.mainText="Wand in hand, you return to the Pit where the Kobolds reside. Do you wish to try your luck with another beast or will you sit a moment to inspect the wand?"
-            if(mode==3) it.mainText="You return to the den of the Kobolds empty handed after exploring the ruins for a time. Do you wish to fight a wretched Kobold or return to the ruins?"
-            if(mode==3) it.button2Text="Return to the altar"
-            if(mode==3) it.nextScene2= {FindWandScene()}
+            if(mode==2) it.mainText = "Wand in hand, you return to the Pit where the Kobolds reside. Do you wish to try your luck with another beast or will you sit a moment to inspect the wand?"
+            if(mode==3){
+                it.mainText = "You return to the den of the Kobolds empty handed after exploring the ruins for a time. Do you wish to fight a wretched Kobold or return to the ruins?"
+                it.button2Text = "Return to the altar"
+                it.nextScene2 = {FindWandScene()}
+            }
             if(Hero.wand){
                 it.button2Text = "Draw your wand and examine the inscription"
                 it.nextScene2 = {
@@ -180,7 +182,7 @@ class CenterPitScene(mode:Int):Scene(
         }
 )
 
-class fleePit():Scene(
+class FleePit:Scene(
         mainText = "You turn your back on the salivating wretch which seeks your life and move to escape. " +
                 "Just as you turn to run, a greedy Kobold waiting for the outcome of the battle steps in your way holding a thin blade.\n" +
                 "It slips in under your ribs, piercing your heart.",
@@ -233,7 +235,7 @@ class MagicUpgradeScene(backScene: Scene):Scene(
         numberOfButtons = 3
 )
 
-class DeathScene():Scene(
+class DeathScene:Scene(
         mainText =  "Your wounds are simply too great. You rest your head on the ground and your consciousness slips away.",
         nextScene1 =  {
             object :Scene(
@@ -253,7 +255,7 @@ class DeathScene():Scene(
         numberOfButtons = 1
 )
 
-class FindWandScene():Scene(
+class FindWandScene:Scene(
         button1Text =  "Return to the Kobold encampment.",
         nextScene1 = {
             CenterPitScene(mode = 2)
@@ -270,7 +272,7 @@ class FindWandScene():Scene(
         }
 )
 
-class barracks(mode:Int) : Scene(
+class barracks(mode:Int): Scene(
         button1Text = "Search the barracks",
         button2Text = "Use the wand",
         nextScene2 = { MagicUpgradeScene(barracks(3)) },
@@ -284,15 +286,19 @@ class barracks(mode:Int) : Scene(
         runOnShow = {
             Hero.hitCheckpoint(barracks(mode))
             if(mode==1) it.mainText ="You are thrown out of the Wandman's realm and find yourself standing in front of an ancient barracks. Do you wish to search the building or return to the safety of the Wandman's realm?"
-            if(mode==2) it.mainText ="You stand again before the barracks. Do you wish to challenge an Undead Knight or return to the safety of the Wandman's realm?"
-            if(mode==2) it.button1Text ="Fight an Undead Knight"
-            if(mode==3) it.mainText ="You are thrown out of the Wandman's realm and find yourself standing again before the barracks. Do you wish to challenge an Undead Knight or return back to the Wandman's realm?"
-            if(mode==3) it.button1Text ="Fight an Undead Knight"
+            if(mode==2) {
+                it.mainText ="You stand again before the barracks. Do you wish to challenge an Undead Knight or return to the safety of the Wandman's realm?"
+                it.button1Text ="Fight an Undead Knight"
+            }
+            if(mode==3){
+                it.mainText ="You are thrown out of the Wandman's realm and find yourself standing again before the barracks. Do you wish to challenge an Undead Knight or return back to the Wandman's realm?"
+                it.button1Text ="Fight an Undead Knight"
+            }
         }
 )
 
 
-class FightScene(enemy: Enemy,ongoing:Boolean,winScene:Scene): Scene(
+class FightScene(enemy:Enemy,ongoing:Boolean,winScene:Scene): Scene(
         mainText = "A ${enemy.name} appears! ${enemy.healthStatus()}. ${Hero.healthStatus()}",
         button1Text = "use your ${Hero.leftHand.wepname}",
         button2Text = "use your ${Hero.mainWeapon.wepname}",
@@ -372,7 +378,7 @@ class GetHitScene(enemy: Fightable,responseScene: Scene):Scene(
         }
 )
 
-class SidePitScene():Scene(
+class SidePitScene:Scene(
         mainText = "Beyond the pit of Kobolds is an old burial mound, and upon it lies an altar.",
         button1Text = "Return to the Kobolds pit",
         button2Text = "Climb the mound and approach the altar.",
@@ -380,7 +386,7 @@ class SidePitScene():Scene(
         nextScene2 = {FindWandScene()}
 )
 
-class WinGameScene():Scene(
+class WinGameScene:Scene(
         mainText =  "You have conquered the mountain and reached the highest peak. You may now rest your head weary traveller. I am writing more to test out the line wrap functionality",
         nextScene1 =  { DeathScene() },
         button1Text = "I am the best!",
