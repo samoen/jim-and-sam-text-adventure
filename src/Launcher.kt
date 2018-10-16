@@ -35,7 +35,7 @@ object UserInterface {
             buttons[index]().text = s.buttonText
         }
         UserInterface.gameForm.textArea1.text = ascene.mainText
-        UserInterface.gameForm.textArea2.text= "Level: ${Hero.heroLevel}\nExp: ${Hero.heroExp} \nMax Health: ${Hero.combatStats.maxHealth}\nCurrent Health: ${Hero.combatStats.currentHealth}\nArmour: ${Hero.combatStats.armor}\n"
+        UserInterface.gameForm.textArea2.text= "Level: ${Hero.combatStats.level}\nExp: ${Hero.combatStats.experience} \nMax Health: ${Hero.combatStats.maxHealth}\nCurrent Health: ${Hero.combatStats.currentHealth}\nArmour: ${Hero.combatStats.armor}\n"
     }
 }
 
@@ -48,19 +48,21 @@ object Hero {
                     Weapon("groin kick",2,2,CombatEffect.None())
             ),
             maxHealth = 10,
-            armor = 5
+            armor = 5,
+            level = 1,
+            experience = 0
     )
-    var heroLevel = 1
-    var heroExp = 0
-    var lastCheckpointHero:Hero = this
+
+    lateinit var lastCheckpointStats:Fightable
+    var lastCheckpointWand:Boolean = false
     var lastCheckpointScene:Scene = WelcomeScene()
     var wand = false
     val checkLevelUp:(()->Unit, ()->Unit)->Unit = { runOnLevel, runOnNoLevel->
         var didLevel = false
         listOf(4,15,30,60).forEachIndexed {index,thresh->
-            if(thresh < heroExp && heroLevel<index+2){
+            if(thresh < combatStats.experience && combatStats.level<index+2){
                 didLevel = true
-                Hero.heroLevel = index+2
+                Hero.combatStats.level = index+2
                 Hero.combatStats.maxHealth += index+2
             }
         }
@@ -71,14 +73,12 @@ object Hero {
     }
     val hitCheckpoint:(Scene)->Unit={scene->
         lastCheckpointScene = scene
-        lastCheckpointHero = this
+        lastCheckpointStats = combatStats.copy()
+        lastCheckpointWand = wand
     }
     val loadCheckpointHero:()->Unit={
-        heroExp = lastCheckpointHero.heroExp
-        combatStats.currentHealth = lastCheckpointHero.combatStats.currentHealth
-        combatStats.armor = lastCheckpointHero.combatStats.armor
-        combatStats.maxHealth = lastCheckpointHero.combatStats.maxHealth
-        heroLevel = lastCheckpointHero.heroLevel
+        combatStats = lastCheckpointStats
+        wand = lastCheckpointWand
     }
 }
 
@@ -103,11 +103,13 @@ open class Enemy(
     val healthStatus = {"${this.combatStats.name} has ${this.combatStats.currentHealth} health"}
 }
 
-open class Fightable(
+data class Fightable(
         var name:String,
         var weapons: List<Weapon>,
         var maxHealth:Int,
-        var armor:Int) {
+        var armor:Int,
+        var level:Int = 1,
+        var experience:Int = 0) {
     var currentHealth:Int = maxHealth
     var ailment:CombatEffect = CombatEffect.None()
 }
@@ -142,7 +144,7 @@ class Kobold:Enemy(
                 maxHealth = 8,
                 armor = 3
         ),
-        expGiven = 16
+        expGiven = 5
 )
 
 class WelcomeScene:Scene(
@@ -280,8 +282,7 @@ class DeathScene:Scene(
                         buttonText = "Return to Checkpoint",
                         destinationScene = {
                             object :Scene(
-                                    mainText = "You awake to find your wounds healed, but your items are lost and your magical benefits removed.\n" +
-                                            "You will return to your last checkpoint",
+                                    mainText = "You will return to your last checkpoint",
                                     sceneButtons = mutableListOf(
                                             SceneButton(
                                                     buttonText = "Next",
@@ -307,7 +308,6 @@ class FindWandScene:Scene(
                 )
         ),
         runOnShow = {
-            Hero.hitCheckpoint(FindWandScene())
             if(Hero.wand){
                 it.mainText = "You see the empty altar where the wand once was."
             }else{
@@ -361,7 +361,7 @@ class FightScene(enemy:Enemy,ongoing:Boolean,winScene:Scene): Scene(
     companion object {
         fun GetFightSceneButtons(enemy:Enemy,winScene:Scene):MutableList<SceneButton>{
             val result = mutableListOf<SceneButton>()
-            Hero.combatStats.weapons.forEachIndexed { index, weapon ->
+            Hero.combatStats.weapons.forEach { weapon ->
                 result.add(
                         SceneButton(
                                 buttonText = "use your ${weapon.wepname}",
@@ -390,10 +390,10 @@ class HitEnemyScene(enemy:Enemy,responseScene:Scene,winScene: Scene,weapon: Weap
                 it.sceneButtons[0].buttonText = "damn"
                 it.sceneButtons[0].destinationScene = {responseScene}
             }else if(newEnemyHealth<1){
-                Hero.heroExp += enemy.expGiven
+                Hero.combatStats.experience += enemy.expGiven
                 Hero.checkLevelUp(
-                        {it.mainText = "You struck down the ${enemy.combatStats.name} and level up! You now are level ${Hero.heroLevel}!."},
-                        {it.mainText = "You struck down the ${enemy.combatStats.name}! You now have ${Hero.heroExp} experience points!."}
+                        {it.mainText = "You struck down the ${enemy.combatStats.name} and level up! You now are level ${Hero.combatStats.level}!."},
+                        {it.mainText = "You struck down the ${enemy.combatStats.name}! You now have ${Hero.combatStats.experience} experience points!."}
                 )
                 it.sceneButtons[0].destinationScene = {winScene}
                 it.sceneButtons[0].buttonText = "awesome"
