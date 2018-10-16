@@ -35,15 +35,17 @@ object UserInterface {
             buttons[index]().text = s.buttonText
         }
         UserInterface.gameForm.textArea1.text = ascene.mainText
-        UserInterface.gameForm.textArea2.text= "Level: ${Hero.heroLevel}\nExp: ${Hero.heroExp} \nMax Health: ${Hero.maxHealth}\nCurrent Health: ${Hero.currentHealth}\nArmour: ${Hero.armor}\n"
+        UserInterface.gameForm.textArea2.text= "Level: ${Hero.heroLevel}\nExp: ${Hero.heroExp} \nMax Health: ${Hero.heroFightable.maxHealth}\nCurrent Health: ${Hero.heroFightable.currentHealth}\nArmour: ${Hero.heroFightable.armor}\n"
     }
 }
 
-object Hero:Fightable(
-        name = "Our hero",
-        mainWeapon =  Weapon("Starter knife",4,3,CombatEffect.None()),
-        maxHealth = 10,
-        armor = 5 ){
+object Hero {
+    var heroFightable = Fightable(
+            name = "Our hero",
+            mainWeapon =  Weapon("Starter knife",4,3,CombatEffect.None()),
+            maxHealth = 10,
+            armor = 5
+    )
     var heroLevel = 1
     var heroExp = 0
     var lastCheckpointHero:Hero = this
@@ -56,11 +58,11 @@ object Hero:Fightable(
             if(thresh < heroExp && heroLevel<index+2){
                 didLevel = true
                 Hero.heroLevel = index+2
-                Hero.maxHealth += index+2
+                Hero.heroFightable.maxHealth += index+2
             }
         }
         if(didLevel){
-            Hero.currentHealth = Hero.maxHealth
+            Hero.heroFightable.currentHealth = Hero.heroFightable.maxHealth
             runOnLevel()
         } else runOnNoLevel()
     }
@@ -70,9 +72,9 @@ object Hero:Fightable(
     }
     val loadCheckpointHero:()->Unit={
         heroExp = lastCheckpointHero.heroExp
-        currentHealth = lastCheckpointHero.currentHealth
-        armor = lastCheckpointHero.armor
-        maxHealth = lastCheckpointHero.maxHealth
+        heroFightable.currentHealth = lastCheckpointHero.heroFightable.currentHealth
+        heroFightable.armor = lastCheckpointHero.heroFightable.armor
+        heroFightable.maxHealth = lastCheckpointHero.heroFightable.maxHealth
         heroLevel = lastCheckpointHero.heroLevel
     }
 }
@@ -92,7 +94,7 @@ sealed class CombatEffect { class None:CombatEffect() class Stun(var chance:Int)
 
 class Weapon(var wepname:String,var damage:Int,var speed:Int,var wepType:CombatEffect)
 
-open class Enemy(name: String,mainWeapon: Weapon,maxHealth: Int,armor: Int,var expGiven: Int):Fightable(name, mainWeapon, maxHealth, armor)
+open class Enemy(var eFightable:Fightable, var expGiven: Int)
 
 open class Fightable(
         var name:String,
@@ -105,6 +107,7 @@ open class Fightable(
 }
 
 class UndeadKnight:Enemy(
+        eFightable = Fightable(
         name = "Undead Knight",
         mainWeapon =  Weapon(
                 wepname = "Rusty great sword",
@@ -112,11 +115,12 @@ class UndeadKnight:Enemy(
                 speed =  2,
                 wepType =  CombatEffect.None()),
         maxHealth =  12,
-        armor = 4,
+        armor = 4),
         expGiven = 15
 )
 
 class Kobold:Enemy(
+        eFightable = Fightable(
         name = "kobold",
         mainWeapon = Weapon(
                 wepname = "kobold dagger",
@@ -125,7 +129,7 @@ class Kobold:Enemy(
                 wepType = CombatEffect.None()
         ),
         maxHealth = 8,
-        armor = 3,
+        armor = 3),
         expGiven = 16
 )
 
@@ -150,7 +154,7 @@ class WelcomeScene:Scene(
         }
 )
 class ScaredScene(backScene:Scene):Scene(
-        mainText = "You sit frozen, unsure of where you are or what to do. After some time, the temporary peace becomes discomfort. Stand, ${Hero.name}, and by fate be borne on wings of fire!",
+        mainText = "You sit frozen, unsure of where you are or what to do. After some time, the temporary peace becomes discomfort. Stand, ${Hero.heroFightable.name}, and by fate be borne on wings of fire!",
         sceneButtons = mutableListOf(
                 SceneButton(
                         buttonText =  "Stand and explore",
@@ -224,9 +228,9 @@ class MagicUpgradeScene(backScene: Scene):Scene(
                             GetBuffedScene(
                                     backScene =  backScene,
                                     buff = {
-                                        if(Hero.armor < 6) {
-                                            Hero.armor++
-                                            it.mainText = "The entity encircles you with a whirling energy. Your skin and muscle harden in an instant. You feel as if your body has been tempered in a smith's fire abd your armour is now ${Hero.armor}."
+                                        if(Hero.heroFightable.armor < 6) {
+                                            Hero.heroFightable.armor++
+                                            it.mainText = "The entity encircles you with a whirling energy. Your skin and muscle harden in an instant. You feel as if your body has been tempered in a smith's fire abd your armour is now ${Hero.heroFightable.armor}."
                                         }
                                         else {
                                             it.mainText = "You have already reaped the benefits of the fortifying enchantment."
@@ -241,10 +245,10 @@ class MagicUpgradeScene(backScene: Scene):Scene(
                             GetBuffedScene(
                                     backScene = backScene,
                                     buff = {
-                                        if(Hero.currentHealth < Hero.maxHealth){
-                                            Hero.currentHealth = Hero.maxHealth
+                                        if(Hero.heroFightable.currentHealth < Hero.heroFightable.maxHealth){
+                                            Hero.heroFightable.currentHealth = Hero.heroFightable.maxHealth
                                             it.mainText =  "You are imbued with vitality. Your health is replenished." +
-                                                    "Your health is now ${Hero.currentHealth}."
+                                                    "Your health is now ${Hero.heroFightable.currentHealth}."
                                         } else
                                             it.mainText = "You are already completely healed. You return to the wand master."
 
@@ -334,67 +338,67 @@ class barracks(mode:Int): Scene(
 
 
 class FightScene(enemy:Enemy,ongoing:Boolean,winScene:Scene): Scene(
-        mainText = "A ${enemy.name} appears! ${enemy.healthStatus()}. ${Hero.healthStatus()}",
+        mainText = "A ${enemy.eFightable.name} appears! ${enemy.eFightable.healthStatus()}. ${Hero.heroFightable.healthStatus()}",
         sceneButtons = mutableListOf(
                 SceneButton(
                         buttonText = "use your ${Hero.leftHand.wepname}",
                         destinationScene = {
-                            if(Hero.leftHand.speed>enemy.mainWeapon.speed){
-                                HitEnemyScene(enemy,GetHitScene(enemy,FightScene(enemy,true,winScene)),winScene,Hero.leftHand)
+                            if(Hero.leftHand.speed>enemy.eFightable.mainWeapon.speed){
+                                HitEnemyScene(enemy,GetHitScene(enemy.eFightable,FightScene(enemy,true,winScene)),winScene,Hero.leftHand)
                             }else{
-                                GetHitScene(enemy,HitEnemyScene(enemy,FightScene(enemy,true,winScene),winScene,Hero.leftHand))
+                                GetHitScene(enemy.eFightable,HitEnemyScene(enemy,FightScene(enemy,true,winScene),winScene,Hero.leftHand))
                             }
                         }
                 ),
                 SceneButton(
-                        buttonText = "use your ${Hero.mainWeapon.wepname}",
+                        buttonText = "use your ${Hero.heroFightable.mainWeapon.wepname}",
                         destinationScene = {
-                            if(Hero.mainWeapon.speed>enemy.mainWeapon.speed){
-                                HitEnemyScene(enemy,GetHitScene(enemy,FightScene(enemy,true,winScene)),winScene,Hero.mainWeapon)
+                            if(Hero.heroFightable.mainWeapon.speed>enemy.eFightable.mainWeapon.speed){
+                                HitEnemyScene(enemy,GetHitScene(enemy.eFightable,FightScene(enemy,true,winScene)),winScene,Hero.heroFightable.mainWeapon)
                             }else{
-                                GetHitScene(enemy, HitEnemyScene(enemy,  FightScene(enemy, true, winScene) , winScene, Hero.mainWeapon))
+                                GetHitScene(enemy.eFightable, HitEnemyScene(enemy,  FightScene(enemy, true, winScene) , winScene, Hero.heroFightable.mainWeapon))
                             }
                         }
                 )
         ),
         runOnShow = {
             if(ongoing){
-                it.mainText = "you continue ur battle with ${enemy.name}. ${enemy.healthStatus()}. ${Hero.healthStatus()}"
+                it.mainText = "you continue ur battle with ${enemy.eFightable.name}. ${enemy.eFightable.healthStatus()}. ${Hero.heroFightable.healthStatus()}"
             }
         }
 )
 
 class HitEnemyScene(enemy: Enemy,responseScene:Scene,winScene: Scene,weapon: Weapon): Scene(
         runOnShow = {
-            val newEnemyHealth = enemy.currentHealth - weapon.damage
+            val newEnemyHealth = enemy.eFightable.currentHealth - weapon.damage
             val rand = Random().nextInt(100)
-            val ail = Hero.ailment
+            val ail = Hero.heroFightable.ailment
             if(ail is CombatEffect.Stun && ail.chance>rand){
-                it.mainText = "${Hero.name} is stunned and missed their turn!"
+                it.mainText = "${Hero.heroFightable.name} is stunned and missed their turn!"
                 it.sceneButtons[0].buttonText = "damn"
                 it.sceneButtons[0].destinationScene = {responseScene}
             }else if(newEnemyHealth<1){
                 Hero.heroExp += enemy.expGiven
                 Hero.checkLevelUp(
-                        {it.mainText = "You struck down the ${enemy.name} and level up! You now are level ${Hero.heroLevel}!."},
-                        {it.mainText = "You struck down the ${enemy.name}! You now have ${Hero.heroExp} experience points!."}
+                        {it.mainText = "You struck down the ${enemy.eFightable.name} and level up! You now are level ${Hero.heroLevel}!."},
+                        {it.mainText = "You struck down the ${enemy.eFightable.name}! You now have ${Hero.heroExp} experience points!."}
                 )
                 it.sceneButtons[0].destinationScene = {winScene}
                 it.sceneButtons[0].buttonText = "awesome"
             }else{
-                enemy.currentHealth = newEnemyHealth
-                enemy.ailment = weapon.wepType
-                it.mainText = "You hit the ${enemy.name} for ${weapon.damage} damage"
+                enemy.eFightable.currentHealth = newEnemyHealth
+                enemy.eFightable.ailment = weapon.wepType
+                it.mainText = "You hit the ${enemy.eFightable.name} for ${weapon.damage} damage"
                 it.sceneButtons[0].destinationScene = {responseScene}
                 it.sceneButtons[0].buttonText = "take that!"
             }
-            if(Hero.ailment is CombatEffect.Stun) Hero.ailment = CombatEffect.None()
+            if(Hero.heroFightable.ailment is CombatEffect.Stun) Hero.heroFightable.ailment = CombatEffect.None()
         }
 )
 
 class GetHitScene(enemy: Fightable,responseScene: Scene):Scene(
         runOnShow ={
-            val newhealth = Hero.currentHealth - enemy.mainWeapon.damage
+            val newhealth = Hero.heroFightable.currentHealth - enemy.mainWeapon.damage
             val rand = Random().nextInt(100)
             val ail = enemy.ailment
             if(ail is CombatEffect.Stun && ail.chance>rand){
@@ -406,8 +410,8 @@ class GetHitScene(enemy: Fightable,responseScene: Scene):Scene(
                 it.sceneButtons[0].destinationScene = { DeathScene() }
                 it.sceneButtons[0].buttonText = "Next"
             }else{
-                Hero.currentHealth = newhealth
-                Hero.ailment = enemy.mainWeapon.wepType
+                Hero.heroFightable.currentHealth = newhealth
+                Hero.heroFightable.ailment = enemy.mainWeapon.wepType
                 it.mainText = "The ${enemy.name} hits you for ${enemy.mainWeapon.damage} damage!"
                 it.sceneButtons[0].destinationScene = {responseScene}
                 it.sceneButtons[0].buttonText = "I can handle it"
