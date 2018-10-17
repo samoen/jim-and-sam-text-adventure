@@ -339,14 +339,35 @@ class barracks(mode:Int): Scene(
             if(mode==1) it.mainText ="You are thrown out of the Wandman's realm and find yourself standing in front of an ancient barracks. Do you wish to search the building or return to the safety of the Wandman's realm?"
             if(mode==2) {
                 it.mainText ="You stand again before the barracks. Do you wish to challenge an Undead Knight or return to the safety of the Wandman's realm?"
-                it.sceneButtons[0].buttonText = "Fight an Undead Knight"
             }
             if(mode==3){
                 it.mainText ="You are thrown out of the Wandman's realm and find yourself standing again before the barracks. Do you wish to challenge an Undead Knight or return back to the Wandman's realm?"
-                it.sceneButtons[0].buttonText ="Fight an Undead Knight"
+            }
+            if(mode==2||mode==3) {
+                        it.sceneButtons[0].buttonText ="Fight an Undead Knight"
+                                it.sceneButtons.add(SceneButton(
+                                buttonText = "Leave",
+                                destinationScene = { DismalPlain() }
+                                ))
             }
         }
 )
+class DismalPlain : Scene(
+        mainText = "You leave the rotting barracks and venture into surrounding plains. The soil and sky feel heavy and dirty.\n" +
+                "In the near distance, the scream of swamp hags echoes. Do you wish to investigate?",
+        sceneButtons = mutableListOf(
+                SceneButton(
+                        buttonText = "Investigate",
+                        destinationScene = { DismalPlain() }
+                ),
+                SceneButton(
+                        buttonText = "Return to Barracks",
+                        destinationScene = { barracks(2) }
+                )
+        )
+)
+
+
 
 
 class FightScene(enemy:Enemy,ongoing:Boolean,winScene:Scene): Scene(
