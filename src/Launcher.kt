@@ -147,6 +147,23 @@ class Kobold:Enemy(
         expGiven = 5
 )
 
+class Hag:Enemy(
+        combatStats = Fightable(
+                name = "Hag",
+                weapons = mutableListOf(
+                        Weapon(
+                                wepname = "Arcane Blast",
+                                damage = 6,
+                                speed = 1,
+                                wepType = CombatEffect.None()
+                        )
+                ),
+                maxHealth = 8,
+                armor = 1
+        ),
+        expGiven = 15
+)
+
 class WelcomeScene:Scene(
         mainText =  "You open your eyes and as the world comes into focus you become scared. You've never been to this place and have no memory of getting here. An alien plant bobbing nearby seems to contort and from it a voice emanates.\n" +
                 "'Welcome, my child. May your stay here be less painful than it is for most.' The voice seems close, but the plant quickly softens and returns to its sunshine languishing.\nYou sit in shock for a moment before realising you have only two choices. In the near distance is an excavated bit of earth surrounded by crude palisade wall.\n" +
@@ -358,7 +375,7 @@ class DismalPlain : Scene(
         sceneButtons = mutableListOf(
                 SceneButton(
                         buttonText = "Investigate",
-                        destinationScene = { DismalPlain() }
+                        destinationScene = { HagFight() }
                 ),
                 SceneButton(
                         buttonText = "Return to Barracks",
@@ -367,6 +384,23 @@ class DismalPlain : Scene(
         )
 )
 
+class HagFight : Scene(
+        mainText = "You creep through the dank foliage and come upon a musty grove foul with the smell of death.\n" +
+"By putrid shores a group of crusty hags, mad with age and arcane power poured blood into a silver contained\n" +
+"One notices you and in an instant is upon you.",
+        sceneButtons = mutableListOf(
+                SceneButton(
+                        buttonText = "Prepare!",
+                        destinationScene = {
+                            FightScene(
+                                    enemy = Hag(),
+                                    ongoing = false,
+                                    winScene = DismalPlain()
+                            )
+                        }
+                )
+        )
+)
 
 
 
