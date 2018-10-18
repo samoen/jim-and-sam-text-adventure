@@ -7,35 +7,28 @@ class Launcher {
         @JvmStatic
         fun main(args: Array<String>) {
             val frm = JFrame()
-            frm.contentPane = UserInterface.gameForm.panel1
+            val gameForm = GameForm()
+            frm.contentPane = gameForm.panel1
             frm.isVisible = true
             frm.setSize(500,500)
-            UserInterface.setupButtonListeners()
-            UserInterface.showScene{WelcomeScene()}
+            var onButtonClicked = listOf<()->Unit>()
+            val buttons:List<()->JButton> = listOf({gameForm.button0}, {gameForm.button1}, {gameForm.button2},{gameForm.button3})
+            buttons.forEachIndexed { buttonNumber, button ->
+                button().addActionListener { onButtonClicked[buttonNumber]()}
+            }
+            fun showScene(scene: Scene){
+                scene.runOnShow(scene)
+                onButtonClicked = scene.sceneButtons.map { {showScene( it.destinationScene() )}}
+                buttons.forEach{it().isVisible = false}
+                scene.sceneButtons.forEachIndexed { index, s ->
+                    buttons[index]().isVisible = true
+                    buttons[index]().text = s.buttonText
+                }
+                gameForm.textArea1.text = scene.mainText
+                gameForm.textArea2.text= "Level: ${Hero.combatStats.level}\nExp: ${Hero.combatStats.experience} \nMax Health: ${Hero.combatStats.maxHealth}\nCurrent Health: ${Hero.combatStats.currentHealth}\nArmour: ${Hero.combatStats.armor}\n"
+            }
+            showScene(WelcomeScene())
         }
-    }
-}
-
-object UserInterface {
-    val gameForm = GameForm()
-    var currentSceneButtons = listOf<SceneButton>()
-    val buttons:List<()->JButton> = listOf({UserInterface.gameForm.button0}, {UserInterface.gameForm.button1}, {UserInterface.gameForm.button2},{UserInterface.gameForm.button3})
-    val setupButtonListeners:()->Unit = {
-        buttons.forEachIndexed { buttonNumber, button ->
-            button().addActionListener{showScene(currentSceneButtons[buttonNumber].destinationScene)}
-        }
-    }
-    val showScene:(()->Scene)->Unit = { theScene->
-        val ascene = theScene()
-        ascene.runOnShow(ascene)
-        currentSceneButtons = ascene.sceneButtons
-        buttons.forEach{it().isVisible = false}
-        ascene.sceneButtons.forEachIndexed { index, s ->
-            buttons[index]().isVisible = true
-            buttons[index]().text = s.buttonText
-        }
-        UserInterface.gameForm.textArea1.text = ascene.mainText
-        UserInterface.gameForm.textArea2.text= "Level: ${Hero.combatStats.level}\nExp: ${Hero.combatStats.experience} \nMax Health: ${Hero.combatStats.maxHealth}\nCurrent Health: ${Hero.combatStats.currentHealth}\nArmour: ${Hero.combatStats.armor}\n"
     }
 }
 
