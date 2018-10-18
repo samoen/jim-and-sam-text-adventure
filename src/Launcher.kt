@@ -405,16 +405,7 @@ class HagFight : Scene(
 
 
 class FightScene(enemy:Enemy,ongoing:Boolean,winScene:Scene): Scene(
-        sceneButtons = FightScene.GetFightSceneButtons(enemy,winScene),
-        runOnShow = {
-            if(ongoing){
-                it.mainText = "you continue ur battle with ${enemy.combatStats.name}. ${enemy.healthStatus()}."
-            }else{
-                it.mainText = "A ${enemy.combatStats.name} appears! ${enemy.healthStatus()}."
-            }
-        }){
-    companion object {
-        fun GetFightSceneButtons(enemy:Enemy,winScene:Scene):MutableList<SceneButton>{
+        sceneButtons = {
             val result = mutableListOf<SceneButton>()
             Hero.combatStats.weapons.forEach { weapon ->
                 result.add(
@@ -430,10 +421,16 @@ class FightScene(enemy:Enemy,ongoing:Boolean,winScene:Scene): Scene(
                         )
                 )
             }
-            return result
+            result
+        }(),
+        runOnShow = {
+            if(ongoing){
+                it.mainText = "you continue ur battle with ${enemy.combatStats.name}. ${enemy.healthStatus()}."
+            }else{
+                it.mainText = "A ${enemy.combatStats.name} appears! ${enemy.healthStatus()}."
+            }
         }
-    }
-}
+)
 
 class HitEnemyScene(enemy:Enemy,responseScene:Scene,winScene: Scene,weapon: Weapon): Scene(
         runOnShow = {
