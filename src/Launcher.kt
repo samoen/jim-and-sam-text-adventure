@@ -11,7 +11,7 @@ class Launcher {
             val gameForm = GameForm()
             frm.contentPane = gameForm.panel1
             frm.isVisible = true
-            frm.setSize(700,500)
+            frm.setSize(500,410)
             var onButtonClicked = listOf<()->Unit>()
             val buttons:List<()->JButton> = listOf({gameForm.button0}, {gameForm.button1}, {gameForm.button2},{gameForm.button3})
             buttons.forEachIndexed { buttonNumber, button ->
@@ -28,6 +28,9 @@ class Launcher {
                 gameForm.Label.icon = ImageIcon(scene.SceneImage)
                 gameForm.textArea1.text = scene.mainText
                 gameForm.textArea2.text= "Level: ${Hero.combatStats.level}\nExp: ${Hero.combatStats.experience} \nMax Health: ${Hero.combatStats.maxHealth}\nCurrent Health: ${Hero.combatStats.currentHealth}\nArmour: ${Hero.combatStats.armor}\n"
+                var result = ""
+                Hero.combatStats.weapons.forEach { result = result + "\n" + it.wepname }
+                gameForm.textArea3.text= "\nInventory: $result"
             }
             showScene(WelcomeScene())
         }
@@ -177,8 +180,8 @@ class Hag:Enemy(
 
 class WelcomeScene:Scene(
         SceneImage = "src/elephantman.jpg",
-        mainText =  "You open your eyes and as the world comes into focus you become scared. You've never been to this place and have no memory of getting here. An alien plant bobbing nearby seems to contort and from it a voice emanates.\n" +
-                "'Welcome, my child. May your stay here be less painful than it is for most.' The voice seems close, but the plant quickly softens and returns to its sunshine languishing.\nYou sit in shock for a moment before realising you have only two choices. In the near distance is an excavated bit of earth surrounded by crude palisade wall.\n" +
+        mainText =  "You open your eyes and as the world comes into focus you become scared. You've never been to this place and have no memory of getting here. An alien plant bobbing nearby seems to contort and from it a voice emanates.\n\n" +
+                "'Welcome, my child. May your stay here be less painful than it is for most.' The voice seems close, but the plant quickly softens and returns to its sunshine languishing.\n\nYou sit in shock for a moment before realising you have only two choices. In the near distance is an excavated bit of earth surrounded by crude palisade wall.\n\n" +
                 "You can go check for any signs of civilised life, or you can sit here and waste away.",
 
         sceneButtons = mutableListOf(

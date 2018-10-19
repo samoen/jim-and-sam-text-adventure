@@ -9,4 +9,5 @@ public class GameForm {
     public JTextArea textArea2;
     public JButton button3;
     public JLabel Label;
+    public JTextArea textArea3;
 }
