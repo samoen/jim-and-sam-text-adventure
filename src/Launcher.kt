@@ -11,7 +11,7 @@ class Launcher {
             val gameForm = GameForm()
             frm.contentPane = gameForm.panel1
             frm.isVisible = true
-            frm.setSize(500,500)
+            frm.setSize(700,500)
             var onButtonClicked = listOf<()->Unit>()
             val buttons:List<()->JButton> = listOf({gameForm.button0}, {gameForm.button1}, {gameForm.button2},{gameForm.button3})
             buttons.forEachIndexed { buttonNumber, button ->
