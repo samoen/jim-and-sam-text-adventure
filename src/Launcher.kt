@@ -73,6 +73,21 @@ object Hero {
         combatStats = lastCheckpointStats
         wand = lastCheckpointWand
     }
+    fun Resolve(scene:Scene,attacker:Fightable,weapon: Weapon,attacked:Fightable,onMiss:(Scene)->Unit,onHit:(Scene)->Unit,onKill:(Scene)->Unit){
+        val newattackedHealth = attacked.currentHealth - weapon.damage
+        val rand = Random().nextInt(100)
+        val ail = attacker.ailment
+        if(ail is CombatEffect.Stun && ail.chance>rand){
+            onMiss(scene)
+        }else if(newattackedHealth<1){
+            onKill(scene)
+        }else{
+            attacked.currentHealth = newattackedHealth
+            attacked.ailment = weapon.wepType
+            onHit(scene)
+        }
+        if(attacker.ailment is CombatEffect.Stun) attacker.ailment = CombatEffect.None()
+    }
 }
 
 class SceneButton(
@@ -426,54 +441,59 @@ class FightScene(enemy:Enemy,ongoing:Boolean,winScene:Scene): Scene(
 )
 
 class HitEnemyScene(enemy:Enemy,responseScene:Scene,winScene: Scene,weapon: Weapon): Scene(
-        runOnShow = {
-            val newEnemyHealth = enemy.combatStats.currentHealth - weapon.damage
-            val rand = Random().nextInt(100)
-            val ail = Hero.combatStats.ailment
-            if(ail is CombatEffect.Stun && ail.chance>rand){
-                it.mainText = "${Hero.combatStats.name} is stunned and missed their turn!"
-                it.sceneButtons[0].buttonText = "damn"
-                it.sceneButtons[0].destinationScene = {responseScene}
-            }else if(newEnemyHealth<1){
-                Hero.combatStats.experience += enemy.expGiven
-                Hero.checkLevelUp(
-                        {it.mainText = "You struck down the ${enemy.combatStats.name} and level up! You now are level ${Hero.combatStats.level}!."},
-                        {it.mainText = "You struck down the ${enemy.combatStats.name}! You now have ${Hero.combatStats.experience} experience points!."}
-                )
-                it.sceneButtons[0].destinationScene = {winScene}
-                it.sceneButtons[0].buttonText = "awesome"
-            }else{
-                enemy.combatStats.currentHealth = newEnemyHealth
-                enemy.combatStats.ailment = weapon.wepType
-                it.mainText = "You hit the ${enemy.combatStats.name} for ${weapon.damage} damage"
-                it.sceneButtons[0].destinationScene = {responseScene}
-                it.sceneButtons[0].buttonText = "take that!"
-            }
-            if(Hero.combatStats.ailment is CombatEffect.Stun) Hero.combatStats.ailment = CombatEffect.None()
+        runOnShow = { theScene->
+            Hero.Resolve(
+                    scene = theScene,
+                    attacker = Hero.combatStats,
+                    weapon = weapon,
+                    attacked = enemy.combatStats,
+                    onHit = { scene->
+                        scene.mainText = "You hit the ${enemy.combatStats.name} for ${weapon.damage} damage"
+                        scene.sceneButtons[0].destinationScene = {responseScene}
+                        scene.sceneButtons[0].buttonText = "take that!"
+                    },
+                    onKill = { scene ->
+                        Hero.combatStats.experience += enemy.expGiven
+                        Hero.checkLevelUp(
+                                {scene.mainText = "You struck down the ${enemy.combatStats.name} and level up! You now are level ${Hero.combatStats.level}!."},
+                                {scene.mainText = "You struck down the ${enemy.combatStats.name}! You now have ${Hero.combatStats.experience} experience points!."}
+                        )
+                        scene.sceneButtons[0].destinationScene = {winScene}
+                        scene.sceneButtons[0].buttonText = "awesome"
+                    },
+                    onMiss = { scene->
+                        scene.mainText = "${Hero.combatStats.name} is stunned and missed their turn!"
+                        scene.sceneButtons[0].buttonText = "damn"
+                        scene.sceneButtons[0].destinationScene = {responseScene}
+                    }
+            )
         }
 )
 
 class GetHitScene(enemy:Enemy,responseScene:Scene):Scene(
         runOnShow ={
-            val newhealth = Hero.combatStats.currentHealth - enemy.combatStats.weapons[0].damage
-            val rand = Random().nextInt(100)
-            val ail = enemy.combatStats.ailment
-            if(ail is CombatEffect.Stun && ail.chance>rand){
-                it.mainText = "the ${enemy.combatStats.name} is stunned and missed their turn!"
-                it.sceneButtons[0].buttonText = "cool"
-                it.sceneButtons[0].destinationScene = {responseScene}
-            }else if(newhealth<1){
-                it.mainText = "The ${enemy.combatStats.name} hits you a fatal blow."
-                it.sceneButtons[0].destinationScene = { DeathScene() }
-                it.sceneButtons[0].buttonText = "Next"
-            }else{
-                Hero.combatStats.currentHealth = newhealth
-                Hero.combatStats.ailment = enemy.combatStats.weapons[0].wepType
-                it.mainText = "The ${enemy.combatStats.name} hits you for ${enemy.combatStats.weapons[0].damage} damage!"
-                it.sceneButtons[0].destinationScene = {responseScene}
-                it.sceneButtons[0].buttonText = "I can handle it"
-            }
-            if(enemy.combatStats.ailment is CombatEffect.Stun) enemy.combatStats.ailment = CombatEffect.None()
+            theScene->
+            Hero.Resolve(
+                    scene = theScene,
+                    attacker = enemy.combatStats,
+                    weapon = enemy.combatStats.weapons.first(),
+                    attacked = Hero.combatStats,
+                    onHit = { scene->
+                        scene.mainText = "The ${enemy.combatStats.name} hits you for ${enemy.combatStats.weapons[0].damage} damage!"
+                        scene.sceneButtons[0].destinationScene = {responseScene}
+                        scene.sceneButtons[0].buttonText = "I can handle it"
+                    },
+                    onKill = { scene ->
+                        scene.mainText = "The ${enemy.combatStats.name} hits you a fatal blow."
+                        scene.sceneButtons[0].destinationScene = { DeathScene() }
+                        scene.sceneButtons[0].buttonText = "Next"
+                    },
+                    onMiss = { scene->
+                        scene.mainText = "the ${enemy.combatStats.name} is stunned and missed their turn!"
+                        scene.sceneButtons[0].buttonText = "cool"
+                        scene.sceneButtons[0].destinationScene = {responseScene}
+                    }
+            )
         }
 )
 
