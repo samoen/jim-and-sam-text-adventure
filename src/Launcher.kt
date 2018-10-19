@@ -1,4 +1,5 @@
 import java.util.*
+import javax.swing.ImageIcon
 import javax.swing.JButton
 import javax.swing.JFrame
 
@@ -24,6 +25,7 @@ class Launcher {
                     buttons[index]().isVisible = true
                     buttons[index]().text = s.buttonText
                 }
+                gameForm.Label.icon = ImageIcon(scene.SceneImage)
                 gameForm.textArea1.text = scene.mainText
                 gameForm.textArea2.text= "Level: ${Hero.combatStats.level}\nExp: ${Hero.combatStats.experience} \nMax Health: ${Hero.combatStats.maxHealth}\nCurrent Health: ${Hero.combatStats.currentHealth}\nArmour: ${Hero.combatStats.armor}\n"
             }
@@ -96,6 +98,7 @@ class SceneButton(
 )
 
 open class Scene(
+        var SceneImage:String = "src/knightman.png",
         var mainText:String = "",
         var sceneButtons: MutableList<SceneButton> = mutableListOf(SceneButton()),
         var runOnShow:(Scene)->Unit = {}
@@ -173,6 +176,7 @@ class Hag:Enemy(
 )
 
 class WelcomeScene:Scene(
+        SceneImage = "src/elephantman.jpg",
         mainText =  "You open your eyes and as the world comes into focus you become scared. You've never been to this place and have no memory of getting here. An alien plant bobbing nearby seems to contort and from it a voice emanates.\n" +
                 "'Welcome, my child. May your stay here be less painful than it is for most.' The voice seems close, but the plant quickly softens and returns to its sunshine languishing.\nYou sit in shock for a moment before realising you have only two choices. In the near distance is an excavated bit of earth surrounded by crude palisade wall.\n" +
                 "You can go check for any signs of civilised life, or you can sit here and waste away.",
