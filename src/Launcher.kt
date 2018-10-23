@@ -32,7 +32,7 @@ class Launcher {
                 Hero.combatStats.weapons.forEach { result = result + "\n" + it.wepname }
                 gameForm.textArea3.text= "\nInventory: $result"
             }
-            showScene(WelcomeScene())
+            showScene(ModeSelectionScene())
         }
     }
 }
@@ -53,7 +53,7 @@ object Hero {
 
     lateinit var lastCheckpointStats:Fightable
     var lastCheckpointWand:Boolean = false
-    var lastCheckpointScene:Scene = WelcomeScene()
+    var lastCheckpointScene:Scene = ModeSelectionScene()
     var wand = false
     val checkLevelUp:(()->Unit, ()->Unit)->Unit = { runOnLevel, runOnNoLevel->
         var didLevel = false
@@ -177,6 +177,24 @@ class Hag:Enemy(
         ),
         expGiven = 15
 )
+
+class ModeSelectionScene:Scene(
+        mainText = "Begin the story mode or enter the arena and battle other players!",
+        sceneButtons = mutableListOf(
+                SceneButton(
+                        buttonText = "Story Mode",
+                        destinationScene = { WelcomeScene() }
+                ),
+                SceneButton(
+                        buttonText = "Multiplayer Arena",
+                        destinationScene = { Arena() }
+                )
+        )
+)
+
+class Arena:Scene(
+        mainText = "You have entered the multiplayer arena."
+        )
 
 class WelcomeScene:Scene(
         SceneImage = "src/elephantman.jpg",
